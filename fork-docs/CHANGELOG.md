@@ -29,6 +29,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `SmartTublexApplication` / `SmartTublexSplashActivity` wrappers
 - `MediaSourceRegistry`, `SidebarSectionRegistry`, `PlexPlaybackBridge`
 - Phase 3a: `PlexBrowseInstaller` injects Plex sidebar section into upstream `BrowsePresenter`; `PlexSignInPlaceholder` error fragment
+- `PlexBrowseInstaller`: pin `TYPE_PLEX` directly under Startseite (`TYPE_HOME`), not at sidebar end
 - Phase 3b: `PlexSignInPresenter` (PIN via SignInView + singleton inject), `PlexServerSelectionPresenter` (AppDialog); placeholder `onAction` wired
 - Phase 3c: `PlexBrowsePresenter.getLibraryRowsObserve` + `mRowMapping` inject; ready section is `TYPE_ROW`
 - Phase 3d: `PlexAwareVideoLoaderController` + `PlexPlaybackInstaller` seed Plex format info into upstream YouTube cache before play

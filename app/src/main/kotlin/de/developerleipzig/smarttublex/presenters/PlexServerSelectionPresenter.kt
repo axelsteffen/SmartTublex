@@ -15,6 +15,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter
 import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
+import de.developerleipzig.smarttublex.errors.PlexErrorClassifier
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
 import io.reactivex.disposables.Disposable
 
@@ -45,7 +46,7 @@ class PlexServerSelectionPresenter private constructor(context: Context) :
                 Log.e(SmartTublexApplication.TAG, "Plex server discovery failed", error)
                 MessageHelpers.showMessage(
                     context,
-                    error.message?.takeIf { it.isNotEmpty() } ?: "No Plex servers found"
+                    PlexErrorClassifier.browseMessage(error)
                 )
             }
         )

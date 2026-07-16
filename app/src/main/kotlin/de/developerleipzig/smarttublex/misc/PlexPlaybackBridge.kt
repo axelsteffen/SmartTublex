@@ -1,5 +1,6 @@
 package de.developerleipzig.smarttublex.misc
 
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo
@@ -7,11 +8,15 @@ import com.liskovsoft.plexapi.adapter.PlexMediaItemAdapter
 import com.liskovsoft.plexapi.adapter.PlexMediaItemFormatInfo
 import com.liskovsoft.plexapi.library.PlexMediaItemImpl
 import com.liskovsoft.plexserviceinterfaces.data.PlexMediaItem
+import com.liskovsoft.sharedutils.helpers.MessageHelpers
+import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
 import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService
 import de.developerleipzig.smarttublex.SmartTublexApplication
+import de.developerleipzig.smarttublex.errors.PlexErrorClassifier
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
+import java.net.SocketTimeoutException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object PlexPlaybackBridge {
     private const val SEED_TIMEOUT_SEC = 60L
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     fun isPlexVideo(video: Video?): Boolean {
         if (video == null) return false
@@ -71,6 +77,7 @@ object PlexPlaybackBridge {
                     SmartTublexApplication.TAG,
                     "PlexPlaybackBridge: seed timed out for ratingKey=${item.ratingKey}"
                 )
+                showPlaybackError(SocketTimeoutException("Plex stream resolve timed out"))
                 false
             } else {
                 error.get()?.let {
@@ -79,6 +86,7 @@ object PlexPlaybackBridge {
                         "PlexPlaybackBridge: resolve failed for ratingKey=${item.ratingKey}",
                         it
                     )
+                    showPlaybackError(it)
                 }
                 ok.get()
             }
@@ -107,6 +115,7 @@ object PlexPlaybackBridge {
                     SmartTublexApplication.TAG,
                     "PlexPlaybackBridge: empty stream URL for ratingKey=${item.ratingKey}"
                 )
+                showPlaybackError(IllegalStateException("Plex stream URL empty"))
                 return false
             }
             seedYouTubeFormatCache(format)
@@ -122,7 +131,22 @@ object PlexPlaybackBridge {
                 "PlexPlaybackBridge: resolve failed for ratingKey=${item.ratingKey}",
                 t
             )
+            showPlaybackError(t)
             false
+        }
+    }
+
+    private fun showPlaybackError(error: Throwable) {
+        val context = try {
+            GlobalPreferences.context()
+        } catch (_: Throwable) {
+            null
+        } ?: return
+        val message = PlexErrorClassifier.playbackMessage(error)
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            MessageHelpers.showMessage(context, message)
+        } else {
+            mainHandler.post { MessageHelpers.showMessage(context, message) }
         }
     }
 

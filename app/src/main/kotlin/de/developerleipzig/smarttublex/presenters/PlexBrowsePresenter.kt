@@ -68,11 +68,24 @@ object PlexBrowsePresenter {
                 }
 
                 var emitted = 0
+                var softFail: Throwable? = null
                 if (movieLibraries.isNotEmpty()) {
-                    emitted += emitMovieRows(emitter, libraryService, movieLibraries)
+                    val result = emitMovieRows(emitter, libraryService, movieLibraries)
+                    emitted += result.emitted
+                    softFail = softFail ?: result.error
                 }
                 if (showLibraries.isNotEmpty()) {
-                    emitted += emitShowRows(emitter, libraryService, showLibraries)
+                    val result = emitShowRows(emitter, libraryService, showLibraries)
+                    emitted += result.emitted
+                    softFail = softFail ?: result.error
+                }
+
+                if (emitted == 0 && softFail != null) {
+                    // All shelves failed — surface as browse error (e.g. PMS went down mid-load).
+                    if (!emitter.isDisposed) {
+                        emitter.onError(softFail)
+                    }
+                    return@createLong
                 }
 
                 if (emitted == 0 && !emitter.isDisposed) {
@@ -118,18 +131,27 @@ object PlexBrowsePresenter {
         return RxHelper.fromCallable { fetchChildrenGroup(video) }
     }
 
+    private data class EmitResult(val emitted: Int, val error: Throwable? = null)
+
     private fun emitMovieRows(
         emitter: ObservableEmitter<List<MediaGroup>>,
         libraryService: PlexLibraryService,
         movieLibraries: List<PlexLibrary>
-    ): Int {
+    ): EmitResult {
         var emitted = 0
-        emitted += emitIfPresent(
+        var error: Throwable? = null
+        emitIfPresent(
             emitter,
             buildMergedShelf(libraryService, movieLibraries, PlexMediaGroupAdapter.Kind.ON_DECK, ROW_CONTINUE_MOVIES)
-        )
-        emitted += emitIfPresent(emitter, buildWatchlist(libraryService, ROW_WATCHLIST))
-        emitted += emitIfPresent(
+        ).also {
+            emitted += it.emitted
+            error = error ?: it.error
+        }
+        emitIfPresent(emitter, buildWatchlist(libraryService, ROW_WATCHLIST)).also {
+            emitted += it.emitted
+            error = error ?: it.error
+        }
+        emitIfPresent(
             emitter,
             buildMergedShelf(
                 libraryService,
@@ -137,25 +159,35 @@ object PlexBrowsePresenter {
                 PlexMediaGroupAdapter.Kind.RECENTLY_ADDED,
                 ROW_RECENT_MOVIES
             )
-        )
-        emitted += emitIfPresent(
+        ).also {
+            emitted += it.emitted
+            error = error ?: it.error
+        }
+        emitIfPresent(
             emitter,
             buildRecommendedRow(libraryService, movieLibraries[0], ROW_MOVIES)
-        )
-        return emitted
+        ).also {
+            emitted += it.emitted
+            error = error ?: it.error
+        }
+        return EmitResult(emitted, error)
     }
 
     private fun emitShowRows(
         emitter: ObservableEmitter<List<MediaGroup>>,
         libraryService: PlexLibraryService,
         showLibraries: List<PlexLibrary>
-    ): Int {
+    ): EmitResult {
         var emitted = 0
-        emitted += emitIfPresent(
+        var error: Throwable? = null
+        emitIfPresent(
             emitter,
             buildMergedShelf(libraryService, showLibraries, PlexMediaGroupAdapter.Kind.ON_DECK, ROW_CONTINUE_SHOWS)
-        )
-        emitted += emitIfPresent(
+        ).also {
+            emitted += it.emitted
+            error = error ?: it.error
+        }
+        emitIfPresent(
             emitter,
             buildMergedShelf(
                 libraryService,
@@ -163,29 +195,39 @@ object PlexBrowsePresenter {
                 PlexMediaGroupAdapter.Kind.RECENTLY_ADDED,
                 ROW_RECENT_SHOWS
             )
-        )
-        emitted += emitIfPresent(
+        ).also {
+            emitted += it.emitted
+            error = error ?: it.error
+        }
+        emitIfPresent(
             emitter,
             buildRecommendedRow(libraryService, showLibraries[0], ROW_SHOWS)
-        )
-        return emitted
+        ).also {
+            emitted += it.emitted
+            error = error ?: it.error
+        }
+        return EmitResult(emitted, error)
     }
 
     private fun emitIfPresent(
         emitter: ObservableEmitter<List<MediaGroup>>,
-        group: MediaGroup?
-    ): Int {
-        if (emitter.isDisposed || group == null || group.isEmpty) return 0
+        built: BuiltGroup
+    ): EmitResult {
+        if (emitter.isDisposed) return EmitResult(0, built.error)
+        val group = built.group
+        if (group == null || group.isEmpty) return EmitResult(0, built.error)
         emitter.onNext(listOf(group))
-        return 1
+        return EmitResult(1, built.error)
     }
+
+    private data class BuiltGroup(val group: MediaGroup?, val error: Throwable? = null)
 
     private fun buildMergedShelf(
         libraryService: PlexLibraryService,
         libraries: List<PlexLibrary>,
         kind: PlexMediaGroupAdapter.Kind,
         title: String
-    ): MediaGroup? {
+    ): BuiltGroup {
         return try {
             val merged = ArrayList<PlexMediaItem>()
             val seen = HashSet<String>()
@@ -212,34 +254,36 @@ object PlexBrowsePresenter {
                 }
             }
 
-            if (merged.isEmpty()) return null
+            if (merged.isEmpty()) return BuiltGroup(null)
 
             val pageForKey = if (libraries.size == 1) paginationPage else null
             val libForKey = if (libraries.size == 1) paginationLibrary else null
-            PlexMediaGroupAdapter.fromSimple(title, kind, libForKey, merged, pageForKey)
+            BuiltGroup(PlexMediaGroupAdapter.fromSimple(title, kind, libForKey, merged, pageForKey))
         } catch (e: Throwable) {
             Log.e(SmartTublexApplication.TAG, "PlexBrowsePresenter: shelf $kind failed", e)
-            null
+            BuiltGroup(null, e)
         }
     }
 
-    private fun buildWatchlist(libraryService: PlexLibraryService, title: String): MediaGroup? {
+    private fun buildWatchlist(libraryService: PlexLibraryService, title: String): BuiltGroup {
         return try {
             val page = toPlexPage(
                 libraryService.getWatchlistPageObserve(PlexPmsApi.TYPE_MOVIE, 0).blockingFirst()
             )
-            if (page == null || page.items.isEmpty()) return null
-            PlexMediaGroupAdapter.fromSimple(
-                title,
-                PlexMediaGroupAdapter.Kind.WATCHLIST,
-                null,
-                PlexPmsApi.TYPE_MOVIE,
-                page.items,
-                page
+            if (page == null || page.items.isEmpty()) return BuiltGroup(null)
+            BuiltGroup(
+                PlexMediaGroupAdapter.fromSimple(
+                    title,
+                    PlexMediaGroupAdapter.Kind.WATCHLIST,
+                    null,
+                    PlexPmsApi.TYPE_MOVIE,
+                    page.items,
+                    page
+                )
             )
         } catch (e: Throwable) {
             Log.e(SmartTublexApplication.TAG, "PlexBrowsePresenter: watchlist failed", e)
-            null
+            BuiltGroup(null, e)
         }
     }
 
@@ -247,16 +291,16 @@ object PlexBrowsePresenter {
         libraryService: PlexLibraryService,
         library: PlexLibrary,
         rowTitle: String
-    ): MediaGroup? {
+    ): BuiltGroup {
         return try {
             val recommended = collectRecommendedItems(libraryService, library)
-            PlexMediaGroupAdapter.fromRecommended(library, rowTitle, recommended, null)
+            BuiltGroup(PlexMediaGroupAdapter.fromRecommended(library, rowTitle, recommended, null))
         } catch (e: Throwable) {
             Log.e(SmartTublexApplication.TAG, "PlexBrowsePresenter: recommended ${library.title} failed", e)
             try {
-                PlexMediaGroupAdapter.fromRecommended(library, rowTitle, emptyList(), null)
+                BuiltGroup(PlexMediaGroupAdapter.fromRecommended(library, rowTitle, emptyList(), null), e)
             } catch (_: Throwable) {
-                null
+                BuiltGroup(null, e)
             }
         }
     }
