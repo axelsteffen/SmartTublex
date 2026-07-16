@@ -31,6 +31,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Phase 3b: `PlexSignInPresenter` (PIN via SignInView + singleton inject), `PlexServerSelectionPresenter` (AppDialog); placeholder `onAction` wired
 - Phase 3c: `PlexBrowsePresenter.getLibraryRowsObserve` + `mRowMapping` inject; ready section is `TYPE_ROW`
 - Phase 3d: `PlexAwareVideoLoaderController` + `PlexPlaybackInstaller` seed Plex format info into upstream YouTube cache before play
+- Phase 3.4: `PlexBrowsePresenter.getLibraryGridObserve` / `getChildrenGroupObserve`; `PlexChannelUploadsPresenter` overrides `obtainUploadsObservable` + scroll continue; installed as `ChannelUploadsPresenter.sInstance`
 
 ### PlexServiceCore
 
@@ -46,7 +47,8 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 | `SplashActivity` | `de.developerleipzig.smarttublex.SmartTublexSplashActivity` | Launcher activity |
 | `BrowsePresenter` (maps) | `PlexBrowseInstaller` | Reflection into `mSectionsMapping` + `enableSection(TYPE_PLEX)` |
 | `SignInPresenter` | `PlexSignInPresenter` | Subclass + `sInstance` inject for PIN UI |
-| — | `PlexBrowsePresenter` | Library rows observable for `mRowMapping` |
+| — | `PlexBrowsePresenter` | Library rows + library grid / children observe for ChannelUploads |
+| `ChannelUploadsPresenter` | `PlexChannelUploadsPresenter` | Subclass + `sInstance` inject for Movies/TV grid drill-down |
 | — | `PlexServerSelectionPresenter` | AppDialog server list after PIN |
 | — | `MediaSourceRegistry` | Source switch / Plex manager access |
 | — | `PlexPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed |

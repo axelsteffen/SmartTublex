@@ -5,6 +5,7 @@ import android.util.Log
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.plexapi.PlexServiceManager
 import com.liskovsoft.plexapi.adapter.PlexMediaGroupAdapter
+import com.liskovsoft.plexapi.library.PlexLibraryImpl
 import com.liskovsoft.plexapi.library.PlexPage
 import com.liskovsoft.plexapi.network.PlexPmsApi
 import com.liskovsoft.plexserviceinterfaces.PlexLibraryService
@@ -14,7 +15,9 @@ import com.liskovsoft.plexserviceinterfaces.data.PlexMediaItem
 import com.liskovsoft.plexserviceinterfaces.data.PlexMediaPage
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.sharedutils.rx.RxHelper
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
 import de.developerleipzig.smarttublex.SmartTublexApplication
+import de.developerleipzig.smarttublex.misc.PlexPlaybackBridge
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import java.util.Locale
@@ -88,11 +91,31 @@ object PlexBrowsePresenter {
     }
 
     /**
-     * Next page for a Plex row (scroll-end). Drill-down grids need Video.isPlex (Phase 3d+).
+     * Next page for a Plex row or grid (scroll-end).
      */
     fun continueGroupObserve(group: MediaGroup?): Observable<MediaGroup>? {
         if (group !is PlexMediaGroupAdapter) return null
         return RxHelper.fromCallable { fetchContinueGroup(group) }
+    }
+
+    /**
+     * Full paginated library grid from a browse stub ([Video.reloadPageKey]).
+     */
+    fun getLibraryGridObserve(video: Video?): Observable<MediaGroup>? {
+        if (video == null || !PlexPlaybackBridge.isPlexVideo(video) || !video.hasReloadPageKey()) {
+            return null
+        }
+        return RxHelper.fromCallable { fetchLibraryGrid(video) }
+    }
+
+    /**
+     * Children of a Plex show or season for [com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter].
+     */
+    fun getChildrenGroupObserve(video: Video?): Observable<MediaGroup>? {
+        if (video == null || !PlexPlaybackBridge.isPlexVideo(video) || !video.hasPlaylist()) {
+            return null
+        }
+        return RxHelper.fromCallable { fetchChildrenGroup(video) }
     }
 
     private fun emitMovieRows(
@@ -284,6 +307,31 @@ object PlexBrowsePresenter {
             || title.contains("recommend") || title.contains("promoted")
             || title.contains("suggested") || title.contains("for you")
             || title.contains("empfohlen")
+    }
+
+    private fun fetchLibraryGrid(video: Video): MediaGroup? {
+        val libraryKey = video.reloadPageKey ?: return null
+        if (libraryKey.isEmpty()) return null
+
+        val libraryType = video.playlistParams ?: TYPE_MOVIE
+        val title = video.title ?: libraryKey
+        val library = PlexLibraryImpl(libraryKey, title, libraryType)
+
+        val page = fetchLibraryPage(PlexServiceManager.instance().libraryService, library, 0)
+        if (page == null || page.items.isEmpty()) return null
+
+        return PlexMediaGroupAdapter.fromLibraryGrid(library, page.items, page)
+    }
+
+    private fun fetchChildrenGroup(video: Video): MediaGroup? {
+        val parent = PlexPlaybackBridge.resolvePlexItem(video) ?: return null
+        val page = toPlexPage(
+            PlexServiceManager.instance().libraryService
+                .getChildrenPageObserve(parent, 0)
+                .blockingFirst()
+        )
+        if (page == null) return null
+        return PlexMediaGroupAdapter.fromContainer(parent, page.items, page)
     }
 
     private fun fetchContinueGroup(group: PlexMediaGroupAdapter): MediaGroup? {

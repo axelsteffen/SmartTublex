@@ -76,6 +76,7 @@ SmartTublex/
 | 3b | Auth / server pick UI (`PlexSignInPresenter`, `PlexServerSelectionPresenter`) | done |
 | 3c | Library rows (`PlexBrowsePresenter` + `mRowMapping`) | done |
 | 3d | Playback via `PlexPlaybackBridge` | done (`PlexAwareVideoLoaderController` + YT format-cache seed) |
+| 3.4 | Library grid drill-down (`getLibraryGridObserve` + `PlexChannelUploadsPresenter`) | done |
 
 ### Phase 4–5
 

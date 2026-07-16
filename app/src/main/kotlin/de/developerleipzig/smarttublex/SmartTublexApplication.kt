@@ -10,6 +10,7 @@ import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
 import de.developerleipzig.smarttublex.misc.PlexPlaybackInstaller
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
+import de.developerleipzig.smarttublex.presenters.PlexChannelUploadsPresenter
 
 /**
  * Wrapper [MainApplication]. Override points for SmartTublex customization.
@@ -28,6 +29,7 @@ class SmartTublexApplication : MainApplication() {
         )
         super.onCreate()
         PlexPlaybackInstaller.ensureInstalled(this)
+        PlexChannelUploadsPresenter.ensureInstalled(this)
         registerActivityLifecycleCallbacks(BrowseInstallCallbacks)
         Log.i(TAG, "SmartTublexApplication.onCreate — upstream MainApplication ready")
     }
@@ -38,9 +40,12 @@ class SmartTublexApplication : MainApplication() {
             if (name.endsWith(".BrowseActivity")) {
                 PlexBrowseInstaller.ensureInstalled(activity)
             }
-            // Re-try playback hook if Application.onCreate ran before presenters were ready
-            if (name.endsWith(".BrowseActivity") || name.endsWith(".PlaybackActivity")) {
+            // Re-try playback / uploads hooks if Application.onCreate ran before presenters were ready
+            if (name.endsWith(".BrowseActivity") || name.endsWith(".PlaybackActivity")
+                || name.endsWith(".ChannelUploadsActivity")
+            ) {
                 PlexPlaybackInstaller.ensureInstalled(activity)
+                PlexChannelUploadsPresenter.ensureInstalled(activity)
             }
         }
 
