@@ -1,0 +1,37 @@
+---
+description: Create and maintain milestone documents in fork-docs/milestones/
+alwaysApply: true
+---
+
+# Milestone progress documentation
+
+## Language
+
+- **Technical documentation** (MDC rules, code comments, technical docs) is always written in **English**.
+
+## Convention
+
+- **Create and maintain one separate document per milestone** in `fork-docs/milestones/`.
+- The document tracks progress, steps, and any open items.
+- File names: `fork-docs/milestones/MILESTONE_<SHORT_DESCRIPTION>.md` (e.g. `MILESTONE_PLEX_INTEGRATION.md`).
+
+## Content per milestone document
+
+- Goal of the milestone
+- Starting point / current state
+- Planned improvements
+- **Implementation steps** (step-by-step plan)
+- Dependencies between steps
+- Affected files
+- (Optional) Progress status per step (e.g. done / in progress / open)
+
+## TV context
+
+The app runs on TV devices with **limited resources** (low RAM, little storage). For milestones and implementations:
+
+- Keep resource usage low (no large additional caches, no bulk API loading)
+- Prefer existing services and data structures where possible
+
+## Fork docs index
+
+See [fork-docs/README.md](../../fork-docs/README.md) for the full documentation layout.

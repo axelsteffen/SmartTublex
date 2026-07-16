@@ -1,0 +1,24 @@
+---
+description: Update fork-docs/CHANGELOG.md when making wrapper-specific changes; document milestone progress
+alwaysApply: true
+---
+
+# Changelog maintenance
+
+When you add, change, or remove wrapper-specific code (anything that differs from the plain upstream SmartTube APK artifact), update:
+
+1. **[fork-docs/CHANGELOG.md](../../fork-docs/CHANGELOG.md)** – add under `[Unreleased]` in the relevant section (`app`, `PlexServiceCore`, `build`, `fork-docs`)
+
+Include: file path, brief description of the change, and any new APIs or settings.
+
+Do **not** maintain a MediaServiceCore `CHANGELOG_FORK.md` — MSC is consumed only via the SmartTube artifact.
+
+---
+
+# Milestone progress in the changelog
+
+When implementing a milestone:
+
+1. **Every completed change** is recorded in `fork-docs/CHANGELOG.md` under `[Unreleased]` in a timely manner.
+2. **Orientation:** The changelog reflects the current state of the milestone – you can always see which steps are done.
+3. **Before the next step:** Check the changelog and the milestone doc in `fork-docs/milestones/` to know the current state and continue seamlessly.

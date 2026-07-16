@@ -1,0 +1,29 @@
+---
+description: Discuss approach before implementing milestone steps
+alwaysApply: true
+---
+
+# Milestone implementation: Approach before code
+
+## Rule
+
+The **planned steps from the milestone document** are not questioned. Instead, discuss **how** to implement them:
+
+1. **Discuss first** – Architectural approach, principles, and concrete implementation of a step.
+2. **Then implement** – Changes are made only after agreement is reached.
+
+## Not up for discussion
+
+- **The planned steps** – They are defined in the milestone document and followed as-is.
+
+## Up for discussion (before implementation)
+
+- **Architecture** – Which approach, where in the code, which dependencies.
+- **Principles** – Consistency with existing code, TV context (resources), patterns.
+- **Concrete implementation** – How the step is technically implemented (e.g. structure, naming, order).
+
+## Process
+
+- The agent briefly outlines the planned approach for the next step.
+- The user confirms or gives feedback on architecture/principles.
+- Implementation happens only after agreement.

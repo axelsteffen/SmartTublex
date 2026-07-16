@@ -1,0 +1,31 @@
+---
+description: Isolate SmartTublex code from the upstream SmartTube APK artifact; extend via inheritance, never patch decompiled upstream
+alwaysApply: true
+---
+
+# Wrapper: minimal upstream surface
+
+Goal: keep SmartTublex maintainable when the upstream SmartTube APK artifact is refreshed via apk2maven.
+
+## Prefer isolation (in order)
+
+1. **SmartTublex-only files/modules** — new classes under `com.smarttublex.*`, `:app`, `PlexServiceCore/`, registries/helpers owned by this repo
+2. **Inheritance / overrides** — subclass public upstream types (`MainApplication`, presenters, activities) and override hooks
+3. **Avoid** editing decompiled upstream bytecode, re-shipping patched upstream sources, or large copy-paste of upstream classes
+
+## Upstream = APK artifact
+
+- Upstream is the Maven artifact produced by apk2maven (`com.liskovsoft.smarttubetv:smarttube`), not a git merge of yuliskov source
+- Do not modify classes inside the installed JAR/APK
+- Sync means reload + reinstall the artifact (see [artifact-sync skill](../skills/artifact-sync/SKILL.md) and [ARTIFACT_SYNC.md](../../fork-docs/ARTIFACT_SYNC.md))
+
+## When adding a customization point
+
+- Prefer a SmartTublex class + thin override call site
+- Document new wrapper touch points in [fork-docs/CHANGELOG.md](../../fork-docs/CHANGELOG.md) § Wrapper Touch Points
+- Mark non-obvious overrides with a short comment: `// WRAPPER: <why>`
+
+## Decision check (before coding)
+
+- Can this live in a SmartTublex-only class with a small override? → do that
+- Unsure whether to subclass a large upstream type? → propose the smaller-diff option first; wait for confirmation on broader overrides
