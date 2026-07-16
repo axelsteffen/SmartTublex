@@ -35,6 +35,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 
 - Submodule `https://github.com/axelsteffen/PlexServiceCore.git`
 - Local compat: omit `getCategory()` on `PlexMediaItemFormatInfo` for upstream JAR
+- Discover watchlist: `MediaContainer.librarySectionID` as `String` (fixes Gson `NumberFormatException` on `"watchlist"`)
 
 ### Wrapper Touch Points
 
