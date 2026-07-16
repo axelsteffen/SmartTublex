@@ -8,6 +8,7 @@ import com.liskovsoft.plexapi.PlexServiceManager
 import com.liskovsoft.smartyoutubetv2.tv.ui.main.MainApplication
 import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
+import de.developerleipzig.smarttublex.misc.PlexPlaybackInstaller
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
 
 /**
@@ -26,14 +27,20 @@ class SmartTublexApplication : MainApplication() {
                 "plexManager=${plex.javaClass.name}"
         )
         super.onCreate()
+        PlexPlaybackInstaller.ensureInstalled(this)
         registerActivityLifecycleCallbacks(BrowseInstallCallbacks)
         Log.i(TAG, "SmartTublexApplication.onCreate — upstream MainApplication ready")
     }
 
     private object BrowseInstallCallbacks : Application.ActivityLifecycleCallbacks {
         override fun onActivityResumed(activity: Activity) {
-            if (activity.javaClass.name.endsWith(".BrowseActivity")) {
+            val name = activity.javaClass.name
+            if (name.endsWith(".BrowseActivity")) {
                 PlexBrowseInstaller.ensureInstalled(activity)
+            }
+            // Re-try playback hook if Application.onCreate ran before presenters were ready
+            if (name.endsWith(".BrowseActivity") || name.endsWith(".PlaybackActivity")) {
+                PlexPlaybackInstaller.ensureInstalled(activity)
             }
         }
 

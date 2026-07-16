@@ -30,6 +30,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Phase 3a: `PlexBrowseInstaller` injects Plex sidebar section into upstream `BrowsePresenter`; `PlexSignInPlaceholder` error fragment
 - Phase 3b: `PlexSignInPresenter` (PIN via SignInView + singleton inject), `PlexServerSelectionPresenter` (AppDialog); placeholder `onAction` wired
 - Phase 3c: `PlexBrowsePresenter.getLibraryRowsObserve` + `mRowMapping` inject; ready section is `TYPE_ROW`
+- Phase 3d: `PlexAwareVideoLoaderController` + `PlexPlaybackInstaller` seed Plex format info into upstream YouTube cache before play
 
 ### PlexServiceCore
 
@@ -48,5 +49,6 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 | — | `PlexBrowsePresenter` | Library rows observable for `mRowMapping` |
 | — | `PlexServerSelectionPresenter` | AppDialog server list after PIN |
 | — | `MediaSourceRegistry` | Source switch / Plex manager access |
-| — | `PlexPlaybackBridge` | FormatInfo resolve for Plex items |
+| — | `PlexPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed |
+| `VideoLoaderController` | `PlexAwareVideoLoaderController` | Installed via `PlexPlaybackInstaller` |
 | — | `PlexSignInPlaceholder` | Sidebar error / sign-in / connected states |

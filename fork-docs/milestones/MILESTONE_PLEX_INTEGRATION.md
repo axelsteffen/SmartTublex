@@ -11,7 +11,7 @@ Play Plex media inside the SmartTublex wrapper over the upstream SmartTube APK a
 | Upstream SmartTube APK (apk2maven) | Wired; wrapper Application/Splash |
 | `PlexServiceCore` submodule | Included; Gradle via `gradle/plex*.gradle.kts` against SmartTube JAR |
 | Wrapper registries / playback bridge | Phase 0–2 slice in `de.developerleipzig.smarttublex.misc` |
-| Browse UI / PlaybackPresenter hooks | Phase 3a–3c done; 3d playback open |
+| Browse UI / PlaybackPresenter hooks | Phase 3a–3d done (playback via format-cache seed) |
 
 ## Architecture Principles
 
@@ -75,7 +75,7 @@ SmartTublex/
 | 3a | Plex sidebar entry (sign-in placeholder) via `PlexBrowseInstaller` | done |
 | 3b | Auth / server pick UI (`PlexSignInPresenter`, `PlexServerSelectionPresenter`) | done |
 | 3c | Library rows (`PlexBrowsePresenter` + `mRowMapping`) | done |
-| 3d | Playback via `PlexPlaybackBridge` | open |
+| 3d | Playback via `PlexPlaybackBridge` | done (`PlexAwareVideoLoaderController` + YT format-cache seed) |
 
 ### Phase 4–5
 
