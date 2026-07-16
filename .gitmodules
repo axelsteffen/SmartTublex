@@ -1,0 +1,3 @@
+[submodule "PlexServiceCore"]
+	path = PlexServiceCore
+	url = https://github.com/axelsteffen/PlexServiceCore.git
