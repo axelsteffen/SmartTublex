@@ -18,7 +18,8 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `packageWrapperApk` patches upstream APK with SmartTublex + Plex DEX and signs debug APK
 - `packageWrapperApk` also overwrites `intermediates/apk/debug/app-debug.apk` so Android Studio Run / `installDebug` do not install the AGP stub (`de.developerleipzig.smarttublex`) missing `MainApplication`
 - `packageWrapperApk` also rewrites `activity-alias` `android:targetActivity` from `SplashActivity` → `SmartTublexSplashActivity` (avoids `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED`)
-- `packageWrapperApk` overwrites upstream mipmap branding from `logo/generated/` and sets `app_name` / `browse_title` to `SmartTublex`
+- `packageWrapperApk` overwrites upstream mipmap branding from `images/logo/generated/` and sets `app_name` / `browse_title` to `SmartTublex`
+- `packageWrapperApk` copies Plex library browse card thumbs from `images/thumbnails/generated/` into `drawable-nodpi` (`all_movies`, `all_tv_shows`)
 - `:app` adds `compileOnly` AndroidX AARs (`core` / `activity` / `fragment` / …) so IDE/Kotlin can resolve supertypes of `SplashActivity` / `MainApplication` from the fat JAR
 - Plex modules compile against `com.liskovsoft.smarttubetv:smarttube` (no MSC source)
 
