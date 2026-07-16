@@ -197,8 +197,8 @@ val packageWrapperApk by tasks.registering {
         manifest.writeText(xml)
 
         // SmartTublex branding: overwrite upstream mipmaps + display name
-        val brandingDir = rootProject.projectDir.resolve("logo/generated")
-        check(brandingDir.isDirectory) { "Missing branding dir: $brandingDir — run logo/generate_branding.py" }
+        val brandingDir = rootProject.projectDir.resolve("images/logo/generated")
+        check(brandingDir.isDirectory) { "Missing branding dir: $brandingDir — run images/logo/generate_branding.py" }
         val nodpi = decoded.resolve("res/mipmap-nodpi")
         check(nodpi.isDirectory) { "Missing decoded mipmap-nodpi: $nodpi" }
         val brandingFiles = listOf(

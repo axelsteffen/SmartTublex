@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate SmartTublex branded master + mipmap-sized PNGs from logo/smarttublex.png."""
+"""Generate SmartTublex branded master + mipmap-sized PNGs from images/logo/smarttublex.png."""
 
 from __future__ import annotations
 
