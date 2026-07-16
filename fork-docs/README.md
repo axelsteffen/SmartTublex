@@ -21,6 +21,7 @@ Documentation for the SmartTublex wrapper over the upstream SmartTube APK artifa
 | [COMMANDS.md](COMMANDS.md) | Agent short commands |
 | [CHANGELOG.md](CHANGELOG.md) | Wrapper changelog |
 | [TV_DEPLOY.md](TV_DEPLOY.md) | Install Debug APK on a TV |
+| [BRANDING.md](BRANDING.md) | Logo / launcher branding in wrapper APK |
 | [milestones/](milestones/) | Milestone tracking |
 
 ## License / attribution

@@ -10,6 +10,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Cursor rules/skills adapted for wrapper + apk2maven sync semantics
 - `TV_DEPLOY.md`: document wrong-APK ClassNotFoundException symptom (`Process: com.smarttublex`)
 - `TV_DEPLOY.md`: document `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED` for stale SplashActivity alias target
+- `BRANDING.md`: SmartTublex logo swap (`Beta Version` + `unofficial SmartTube fork`) via `packageWrapperApk`
 
 ### build
 
@@ -17,6 +18,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `packageWrapperApk` patches upstream APK with SmartTublex + Plex DEX and signs debug APK
 - `packageWrapperApk` also overwrites `intermediates/apk/debug/app-debug.apk` so Android Studio Run / `installDebug` do not install the AGP stub (`de.developerleipzig.smarttublex`) missing `MainApplication`
 - `packageWrapperApk` also rewrites `activity-alias` `android:targetActivity` from `SplashActivity` → `SmartTublexSplashActivity` (avoids `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED`)
+- `packageWrapperApk` overwrites upstream mipmap branding from `logo/generated/` and sets `app_name` / `browse_title` to `SmartTublex`
 - `:app` adds `compileOnly` AndroidX AARs (`core` / `activity` / `fragment` / …) so IDE/Kotlin can resolve supertypes of `SplashActivity` / `MainApplication` from the fat JAR
 - Plex modules compile against `com.liskovsoft.smarttubetv:smarttube` (no MSC source)
 

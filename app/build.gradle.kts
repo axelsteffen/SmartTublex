@@ -88,7 +88,7 @@ tasks.named("preBuild") {
 
 val packageWrapperApk by tasks.registering {
     group = "build"
-    description = "Patch upstream SmartTube APK with SmartTublex Application/Splash and sign debug APK"
+    description = "Patch upstream SmartTube APK with SmartTublex Application/Splash, branding, and sign debug APK"
     dependsOn(
         "compileDebugKotlin",
         "processDebugResources",
@@ -195,6 +195,49 @@ val packageWrapperApk by tasks.registering {
             "activity-alias still targets upstream SplashActivity"
         }
         manifest.writeText(xml)
+
+        // SmartTublex branding: overwrite upstream mipmaps + display name
+        val brandingDir = rootProject.projectDir.resolve("logo/generated")
+        check(brandingDir.isDirectory) { "Missing branding dir: $brandingDir — run logo/generate_branding.py" }
+        val nodpi = decoded.resolve("res/mipmap-nodpi")
+        check(nodpi.isDirectory) { "Missing decoded mipmap-nodpi: $nodpi" }
+        val brandingFiles = listOf(
+            "app_icon.png",
+            "app_icon_alt.png",
+            "app_banner.png",
+            "app_logo.png",
+            "app_logo_semi_red.png",
+            "app_logo_semi_grey.png",
+        )
+        for (name in brandingFiles) {
+            val src = brandingDir.resolve(name)
+            check(src.isFile) { "Missing branding asset: $src" }
+            src.copyTo(nodpi.resolve(name), overwrite = true)
+        }
+        val launcherDensities = listOf("mdpi", "hdpi", "xhdpi", "xxhdpi")
+        for (density in launcherDensities) {
+            val src = brandingDir.resolve("ic_launcher_$density.png")
+            val dest = decoded.resolve("res/mipmap-$density/ic_launcher.png")
+            if (src.isFile && dest.parentFile?.isDirectory == true) {
+                src.copyTo(dest, overwrite = true)
+            }
+        }
+
+        val stringsFile = decoded.resolve("res/values/strings.xml")
+        check(stringsFile.isFile) { "Missing decoded strings.xml: $stringsFile" }
+        var stringsXml = stringsFile.readText()
+        fun replaceStringResource(name: String, value: String) {
+            val pattern = Regex("""(<string\s+name="$name">)[^<]*(</string>)""")
+            check(pattern.containsMatchIn(stringsXml)) {
+                "string resource '$name' not found in strings.xml"
+            }
+            stringsXml = pattern.replace(stringsXml, "$1$value$2")
+        }
+        replaceStringResource("app_name", "SmartTublex")
+        if (Regex("""<string\s+name="browse_title">""").containsMatchIn(stringsXml)) {
+            replaceStringResource("browse_title", "SmartTublex")
+        }
+        stringsFile.writeText(stringsXml)
 
         producedDex.copyTo(decoded.resolve("classes4.dex"), overwrite = true)
 
