@@ -89,13 +89,42 @@ If **PlexServiceCore** has changes:
 
 If only root changed, commit root only.
 
+### Logical commit splitting (mandatory)
+
+**Always** separate changes into small, coherent commits. Never dump unrelated work into one commit.
+
+Principles:
+
+- **One commit = one logical unit** — one concern, one reason to change.
+- Prefer **several small packages** over one mixed mega-commit.
+- Split by concern: `feat` / `fix` / `docs` / `chore` / `build` / `refactor` / `test`.
+- Split unrelated features even when they share the same type.
+- Each commit must stand alone: message understandable without the next commit.
+- Order matters: commit foundations first, then dependents.
+- **Default is always split** — do not ask whether to split; only ask when the boundary between packages is genuinely ambiguous.
+
+How to split:
+
+1. After analyzing the full diff, group files/hunks into logical packages.
+2. Draft **one Conventional Commit message per package** (not one per repo).
+3. Stage and commit each package separately (`git add` specific paths).
+4. If one file mixes concerns, use `git add -p` when practical; otherwise assign the file to its primary package and note secondary bits in the body.
+
+Examples of good splits:
+
+| Diff contains | Commit as |
+|---------------|-----------|
+| Plex feature + fork-docs changelog | `feat(plex): …` then `docs(fork-docs): …` |
+| Gradle wiring + thumbnail assets | `build(app): …` then `chore(app): …` (or separate `feat` if user-facing) |
+| Bugfix + unrelated refactor | `fix(…): …` then `refactor(…): …` |
+| PSC code + parent submodule pointer | commit inside `PlexServiceCore`, then `chore(psc): update submodule pointer` |
+
 ### Steps
 
 1. Analyze all staged/unstaged changes across root and submodule.
-2. Draft **one Conventional Commit message per repo** that has changes.
-3. Show message(s) to user briefly if ambiguous; otherwise proceed.
-4. Stage relevant files (`git add` — never commit secrets).
-5. Commit via HEREDOC:
+2. Group into logical packages; draft one Conventional Commit message **per package**.
+3. Show the planned commit list briefly when there are 2+ packages or when boundaries are ambiguous; otherwise proceed.
+4. For each package in dependency order: stage only its files (`git add` — never commit secrets), then commit via HEREDOC:
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -106,7 +135,7 @@ EOF
 )"
 ```
 
-6. Verify: `git status`
+5. Verify: `git status` (working tree clean or only intentional leftovers).
 
 ### Safety (mandatory)
 

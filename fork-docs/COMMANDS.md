@@ -33,13 +33,14 @@ Skill: [`.cursor/skills/artifact-sync/SKILL.md`](../.cursor/skills/artifact-sync
 
 | Say | Action |
 |-----|--------|
-| **`commit`** | Stage + commit with Conventional Commits message (no push) |
+| **`commit`** | Split into small logical packages; Conventional Commits each (no push) |
 | **`push`** | Push to origin (`PlexServiceCore` first if needed) |
-| **`commit push`** | Commit then push |
+| **`commit push`** | Commit (logical splits) then push |
 
 Skill: [`.cursor/skills/fork-git/SKILL.md`](../.cursor/skills/fork-git/SKILL.md)
 
-**Message format:** `type(scope): subject` — e.g. `docs(fork-docs): add artifact sync skill`
+**Message format:** `type(scope): subject` — e.g. `docs(fork-docs): add artifact sync skill`  
+**Splitting:** always one concern per commit; prefer several small packages over one mixed commit.
 
 ---
 
