@@ -223,6 +223,19 @@ val packageWrapperApk by tasks.registering {
             }
         }
 
+        // Plex "All Movies" / "All TV Shows" library browse card thumbnails
+        val thumbnailDir = rootProject.projectDir.resolve("images/thumbnails/generated")
+        check(thumbnailDir.isDirectory) {
+            "Missing thumbnail dir: $thumbnailDir — run images/thumbnails/generate_thumbnails.py"
+        }
+        val drawableNodpi = decoded.resolve("res/drawable-nodpi")
+        drawableNodpi.mkdirs()
+        for (name in listOf("all_movies.png", "all_tv_shows.png")) {
+            val src = thumbnailDir.resolve(name)
+            check(src.isFile) { "Missing thumbnail asset: $src" }
+            src.copyTo(drawableNodpi.resolve(name), overwrite = true)
+        }
+
         val stringsFile = decoded.resolve("res/values/strings.xml")
         check(stringsFile.isFile) { "Missing decoded strings.xml: $stringsFile" }
         var stringsXml = stringsFile.readText()
