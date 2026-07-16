@@ -23,6 +23,10 @@ Documentation for the SmartTublex wrapper over the upstream SmartTube APK artifa
 | [TV_DEPLOY.md](TV_DEPLOY.md) | Install Debug APK on a TV |
 | [milestones/](milestones/) | Milestone tracking |
 
+## License / attribution
+
+Root [LICENSE](../LICENSE) (SmartTublex MIT) and [NOTICE](../NOTICE) (upstream SmartTube / yuliskov MIT). See also the project [README](../README.md).
+
 ## Cursor rules / skills
 
 See `.cursor/rules/` and `.cursor/skills/` (artifact-sync, fork-git).
