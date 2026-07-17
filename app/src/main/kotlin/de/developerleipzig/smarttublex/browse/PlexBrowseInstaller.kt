@@ -4,9 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection
-import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import de.developerleipzig.smarttublex.errors.PlexBrowseErrorHandler
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
@@ -52,8 +50,10 @@ object PlexBrowseInstaller {
             return
         }
 
-        val sidebar = SidebarService.instance(appContext)
-        val wasPinned = sidebar.isSectionPinned(SidebarSectionRegistry.TYPE_PLEX)
+        // SidebarService via Java bridge — Kotlin cannot name that type from the fat JAR
+        // (nested AppPrefs.ProfileChangeListener + missing InnerClasses from dex2jar).
+        val sidebar = SidebarServiceBridge.instance(appContext)
+        val wasPinned = SidebarServiceBridge.isSectionPinned(sidebar, SidebarSectionRegistry.TYPE_PLEX)
         if (!wasPinned) {
             Log.i(SmartTublexApplication.TAG, "PlexBrowseInstaller: enabling TYPE_PLEX section")
             // enableSection uses default-section index (wrong for TYPE_PLEX) and calls updateSections()
@@ -69,7 +69,7 @@ object PlexBrowseInstaller {
         Log.i(
             SmartTublexApplication.TAG,
             "PlexBrowseInstaller: Plex sidebar ready " +
-                "(pinned=${sidebar.isSectionPinned(SidebarSectionRegistry.TYPE_PLEX)}, " +
+                "(pinned=${SidebarServiceBridge.isSectionPinned(sidebar, SidebarSectionRegistry.TYPE_PLEX)}, " +
                 "ready=$ready, type=${section.type}, afterHome=$moved)"
         )
     }
@@ -78,12 +78,9 @@ object PlexBrowseInstaller {
      * Moves the pinned Plex section to the slot right after Home.
      * @return true if the pin order changed
      */
-    @Suppress("UNCHECKED_CAST")
-    private fun placePlexAfterHome(sidebar: SidebarService): Boolean {
+    private fun placePlexAfterHome(sidebar: Any): Boolean {
         return try {
-            val field = SidebarService::class.java.getDeclaredField("mPinnedItems")
-            field.isAccessible = true
-            val items = field.get(sidebar) as MutableList<Video>
+            val items = SidebarServiceBridge.pinnedItems(sidebar)
 
             val homeIndex = items.indexOfFirst { it != null && it.sectionId == MediaGroup.TYPE_HOME }
             val plexIndex = items.indexOfFirst {
@@ -104,7 +101,7 @@ object PlexBrowseInstaller {
                 else -> homeIndex + 1
             }.coerceIn(0, items.size)
             items.add(insertAt, plex)
-            sidebar.persistState()
+            SidebarServiceBridge.persistState(sidebar)
             Log.i(
                 SmartTublexApplication.TAG,
                 "PlexBrowseInstaller: moved TYPE_PLEX after Home (index $insertAt)"
