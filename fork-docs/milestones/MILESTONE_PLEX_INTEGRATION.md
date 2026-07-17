@@ -77,6 +77,7 @@ SmartTublex/
 | 3c | Library rows (`PlexBrowsePresenter` + `mRowMapping`) | done |
 | 3d | Playback via `PlexPlaybackBridge` | done (`PlexAwareVideoLoaderController` + YT format-cache seed) |
 | 3.4 | Library grid drill-down (`getLibraryGridObserve` + `PlexChannelUploadsPresenter`) | done |
+| 3.5 | Plex settings (`PlexSettingsPresenter` + `PlexSettingsInstaller` → settings grid) | done |
 
 ### Phase 4–5
 

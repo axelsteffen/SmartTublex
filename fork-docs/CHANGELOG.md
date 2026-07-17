@@ -34,6 +34,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Phase 3c: `PlexBrowsePresenter.getLibraryRowsObserve` + `mRowMapping` inject; ready section is `TYPE_ROW`
 - Phase 3d: `PlexAwareVideoLoaderController` + `PlexPlaybackInstaller` seed Plex format info into upstream YouTube cache before play
 - Phase 3.4: `PlexBrowsePresenter.getLibraryGridObserve` / `getChildrenGroupObserve`; `PlexChannelUploadsPresenter` overrides `obtainUploadsObservable` + scroll continue; installed as `ChannelUploadsPresenter.sInstance`
+- Phase 3.5: `PlexSettingsPresenter` (sign-in / server pick / sign-out); `PlexSettingsInstaller` injects Plex item into upstream settings grid after Accounts
 
 ### PlexServiceCore
 

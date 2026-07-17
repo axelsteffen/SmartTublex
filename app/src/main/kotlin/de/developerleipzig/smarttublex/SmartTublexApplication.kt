@@ -9,6 +9,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.main.MainApplication
 import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
 import de.developerleipzig.smarttublex.misc.PlexPlaybackInstaller
+import de.developerleipzig.smarttublex.misc.PlexSettingsInstaller
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
 import de.developerleipzig.smarttublex.presenters.PlexChannelUploadsPresenter
 
@@ -39,6 +40,7 @@ class SmartTublexApplication : MainApplication() {
             val name = activity.javaClass.name
             if (name.endsWith(".BrowseActivity")) {
                 PlexBrowseInstaller.ensureInstalled(activity)
+                PlexSettingsInstaller.ensureInstalled(activity)
             }
             // Re-try playback / uploads hooks if Application.onCreate ran before presenters were ready
             if (name.endsWith(".BrowseActivity") || name.endsWith(".PlaybackActivity")
