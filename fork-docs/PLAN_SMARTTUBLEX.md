@@ -94,7 +94,7 @@ In `.cursor/rules/fork-commands.mdc` + `fork-docs/COMMANDS.md`:
 |------------|---------------------|--------|
 | `artifact-sync` | `sync`, `sync smarttube`, `refresh artifact`, `update artifact`, `upstream sync`, `reload artifact` | Skill `artifact-sync`: APK neu laden + `installApkArtifact` |
 | `artifact-status` | `artifact status`, `upstream status`, `base status`, `apk status` | Nur Status des installierten Artifacts melden — **kein** Re-Download außer explizit Sync |
-| `plex-status` | `plex status`, … | Milestone-Doc lesen, Fortschritt melden |
+| `milestone-status` | `milestone status`, `meilenstein status`, … | Aktuelles Milestone-Doc lesen, Fortschritt melden |
 | `next-step` | `next step`, `nächster schritt`, … | Milestone-Workflow (Discuss → Confirm → Implement) |
 | `log-change` | `log change`, `changelog`, … | `fork-docs/CHANGELOG.md` (ohne MSC-Changelog) |
 | `git-commit` / `git-push` / `commit-push` | wie bisher | `fork-git` angepasst |

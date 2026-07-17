@@ -23,8 +23,9 @@ Skill: [`.cursor/skills/artifact-sync/SKILL.md`](../.cursor/skills/artifact-sync
 
 | Say | Action |
 |-----|--------|
-| **`plex status`** | Show Plex milestone progress |
-| **`next step`** | Outline next open milestone step (discuss before code) |
+| **`milestone status`** / **`meilenstein status`** | Progress of the **current** milestone (named in chat, else newest `MILESTONE_*.md`) |
+| `milestone progress`, `meilenstein progress` | _(same)_ |
+| **`next step`** | Outline next open step of the current milestone (discuss before code) |
 | `nächster schritt`, `continue milestone` | _(same)_ |
 
 ---
@@ -58,7 +59,8 @@ Skill: [`.cursor/skills/fork-git/SKILL.md`](../.cursor/skills/fork-git/SKILL.md)
 ```text
 sync                   → reload + install SmartTube artifact
 artifact status        → what is in ~/.m2 for smarttube?
-plex status            → milestone progress table
-next step              → discuss next Plex task
+milestone status       → current milestone progress table
+meilenstein status     → _(same)_
+next step              → discuss next open milestone step
 commit                 → conventional commit (no push)
 ```
