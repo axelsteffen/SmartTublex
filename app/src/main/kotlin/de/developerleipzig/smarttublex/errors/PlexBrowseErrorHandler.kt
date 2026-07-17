@@ -16,21 +16,32 @@ import io.reactivex.Observable
  * Surfaces Plex browse failures as a clear error fragment instead of the stock
  * [com.liskovsoft.smartyoutubetv2.common.app.models.errors.CategoryEmptyError] stack dump.
  *
- * Strategy: switch the Plex sidebar section to [BrowseSection.TYPE_ERROR], and also
- * call [BrowseView.showError] after the upstream error handler so our message wins.
+ * Keeps a sticky [BrowseSection.TYPE_ERROR] in the sidebar mapping so leaving and
+ * returning to Plex still shows the message (via [BrowseSectionFragmentFactory]).
  */
 object PlexBrowseErrorHandler {
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    /** Last browse failure mode; cleared on successful retry / refresh. */
+    @Volatile
+    var stickyMode: PlexSignInPlaceholder.Mode? = null
+        private set
+
+    fun clearSticky() {
+        stickyMode = null
+    }
+
     /**
      * Wraps the library-rows observable so connectivity failures become a user-facing error.
      */
-    fun wrapRows(context: Context, source: Observable<List<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup>>):
-        Observable<List<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup>> {
+    fun wrapRows(
+        context: Context,
+        source: Observable<List<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup>>
+    ): Observable<List<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup>> {
         val appContext = context.applicationContext
         return source.onErrorResumeNext { error: Throwable ->
             Log.e(SmartTublexApplication.TAG, "PlexBrowseErrorHandler: browse failed", error)
-            // Run after upstream handleLoadError(null) → CategoryEmptyError so our message wins.
+            // After upstream handleLoadError(null) → CategoryEmptyError so our section wins.
             mainHandler.postDelayed({ present(appContext, error) }, 100)
             Observable.empty()
         }
@@ -44,14 +55,17 @@ object PlexBrowseErrorHandler {
             PlexErrorClassifier.Kind.OFFLINE -> PlexSignInPlaceholder.Mode.SERVER_UNAVAILABLE
             PlexErrorClassifier.Kind.GENERIC -> PlexSignInPlaceholder.Mode.LOAD_FAILED
         }
+        stickyMode = mode
         val placeholder = PlexSignInPlaceholder(appContext, mode)
 
         try {
             val presenter = BrowsePresenter.instance(appContext)
             injectErrorSection(presenter, placeholder)
+            // Rebuild sidebar headers from mSectionsMapping so return visits use TYPE_ERROR
+            // (ErrorDialogFragment) instead of the stale TYPE_ROW with no row mapping.
+            presenter.updateSections()
             val view = presenter.view as? BrowseView
             view?.showProgressBar(false)
-            // Upstream handleLoadError may show CategoryEmptyError first; overwrite it.
             view?.showError(placeholder)
             Log.i(
                 SmartTublexApplication.TAG,

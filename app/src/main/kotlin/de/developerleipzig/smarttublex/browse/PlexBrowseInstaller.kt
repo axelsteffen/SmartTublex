@@ -26,8 +26,9 @@ object PlexBrowseInstaller {
         install(context, forceRefresh = false)
     }
 
-    /** Re-inject section (e.g. after sign-in / server pick) and refresh the browse UI. */
+    /** Re-inject section (e.g. after sign-in / server pick / Retry) and refresh the browse UI. */
     fun refresh(context: Context) {
+        PlexBrowseErrorHandler.clearSticky()
         install(context, forceRefresh = true)
     }
 
@@ -45,7 +46,9 @@ object PlexBrowseInstaller {
         if (!injectSectionMapping(presenter, section)) {
             return
         }
-        if (!injectRowMapping(presenter, appContext, ready)) {
+        // Only attach row loading when the section is actually a row browser (not sticky error).
+        val loadRows = ready && section.type == BrowseSection.TYPE_ROW
+        if (!injectRowMapping(presenter, appContext, loadRows)) {
             return
         }
 

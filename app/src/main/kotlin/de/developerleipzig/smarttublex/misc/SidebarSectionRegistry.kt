@@ -4,6 +4,7 @@ import android.content.Context
 import com.liskovsoft.plexapi.prefs.PlexPrefs
 import com.liskovsoft.smartyoutubetv2.common.R
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection
+import de.developerleipzig.smarttublex.errors.PlexBrowseErrorHandler
 import de.developerleipzig.smarttublex.errors.PlexSignInPlaceholder
 
 /**
@@ -35,6 +36,18 @@ object SidebarSectionRegistry {
             )
         }
         if (isPlexReady(context)) {
+            // Sticky offline / load-failed UI until the user taps Retry.
+            val sticky = PlexBrowseErrorHandler.stickyMode
+            if (sticky != null) {
+                return BrowseSection(
+                    TYPE_PLEX,
+                    TITLE_PLEX,
+                    BrowseSection.TYPE_ERROR,
+                    R.drawable.icon_playlist,
+                    false,
+                    PlexSignInPlaceholder(context, sticky)
+                )
+            }
             // WRAPPER: 3c — rows via PlexBrowseInstaller mRowMapping
             return BrowseSection(
                 TYPE_PLEX,
