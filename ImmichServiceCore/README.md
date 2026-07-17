@@ -23,7 +23,7 @@ SmartTublex/
 
 ## Package
 
-`com.liskovsoft.immichapi` / `com.liskovsoft.immichserviceinterfaces`
+`de.developerleipzig.immichapi` / `de.developerleipzig.immichserviceinterfaces`
 
 ## Auth
 

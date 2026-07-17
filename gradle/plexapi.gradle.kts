@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.liskovsoft.plexapi"
+    namespace = "de.developerleipzig.plexapi"
     compileSdk = 34
 
     defaultConfig {

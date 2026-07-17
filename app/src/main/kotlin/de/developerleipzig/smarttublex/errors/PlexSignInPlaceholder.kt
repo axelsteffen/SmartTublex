@@ -2,7 +2,7 @@ package de.developerleipzig.smarttublex.errors
 
 import android.content.Context
 import android.util.Log
-import com.liskovsoft.plexapi.PlexServiceManager
+import de.developerleipzig.plexapi.PlexServiceManager
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter
 import de.developerleipzig.smarttublex.SmartTublexApplication

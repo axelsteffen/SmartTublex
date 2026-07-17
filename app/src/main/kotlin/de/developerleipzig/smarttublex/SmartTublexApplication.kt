@@ -4,7 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import android.util.Log
-import com.liskovsoft.plexapi.PlexServiceManager
+import de.developerleipzig.plexapi.PlexServiceManager
 import com.liskovsoft.smartyoutubetv2.tv.ui.main.MainApplication
 import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry

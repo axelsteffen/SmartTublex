@@ -1,7 +1,7 @@
 package de.developerleipzig.smarttublex.misc
 
 import android.content.Context
-import com.liskovsoft.plexapi.prefs.PlexPrefs
+import de.developerleipzig.plexapi.prefs.PlexPrefs
 import com.liskovsoft.smartyoutubetv2.common.R
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection
 import de.developerleipzig.smarttublex.errors.PlexBrowseErrorHandler

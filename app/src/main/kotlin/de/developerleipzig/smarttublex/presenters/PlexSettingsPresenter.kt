@@ -2,7 +2,7 @@ package de.developerleipzig.smarttublex.presenters
 
 import android.annotation.SuppressLint
 import android.content.Context
-import com.liskovsoft.plexapi.PlexServiceManager
+import de.developerleipzig.plexapi.PlexServiceManager
 import com.liskovsoft.sharedutils.helpers.MessageHelpers
 import com.liskovsoft.smartyoutubetv2.common.R
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem

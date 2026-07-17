@@ -4,10 +4,10 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo
-import com.liskovsoft.plexapi.adapter.PlexMediaItemAdapter
-import com.liskovsoft.plexapi.adapter.PlexMediaItemFormatInfo
-import com.liskovsoft.plexapi.library.PlexMediaItemImpl
-import com.liskovsoft.plexserviceinterfaces.data.PlexMediaItem
+import de.developerleipzig.plexapi.adapter.PlexMediaItemAdapter
+import de.developerleipzig.plexapi.adapter.PlexMediaItemFormatInfo
+import de.developerleipzig.plexapi.library.PlexMediaItemImpl
+import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem
 import com.liskovsoft.sharedutils.helpers.MessageHelpers
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video

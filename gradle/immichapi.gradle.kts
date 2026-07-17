@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.liskovsoft.immichapi"
+    namespace = "de.developerleipzig.immichapi"
     compileSdk = 34
 
     defaultConfig {

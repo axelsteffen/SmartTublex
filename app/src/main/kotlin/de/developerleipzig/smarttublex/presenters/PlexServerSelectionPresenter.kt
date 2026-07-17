@@ -3,8 +3,8 @@ package de.developerleipzig.smarttublex.presenters
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
-import com.liskovsoft.plexapi.PlexServiceManager
-import com.liskovsoft.plexserviceinterfaces.data.PlexServer
+import de.developerleipzig.plexapi.PlexServiceManager
+import de.developerleipzig.plexserviceinterfaces.data.PlexServer
 import com.liskovsoft.sharedutils.helpers.MessageHelpers
 import com.liskovsoft.sharedutils.rx.RxHelper
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem

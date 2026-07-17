@@ -1,7 +1,7 @@
 package de.developerleipzig.smarttublex.misc
 
 import com.liskovsoft.mediaserviceinterfaces.ServiceManager
-import com.liskovsoft.plexapi.PlexServiceManager
+import de.developerleipzig.plexapi.PlexServiceManager
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager
 
 /**
@@ -32,7 +32,7 @@ object MediaSourceRegistry {
      */
     fun getServiceManager(): ServiceManager = YouTubeServiceManager.instance()
 
-    fun getPlexServiceManager(): com.liskovsoft.plexserviceinterfaces.PlexServiceManager {
+    fun getPlexServiceManager(): de.developerleipzig.plexserviceinterfaces.PlexServiceManager {
         return PlexServiceManager.instance()
     }
 }

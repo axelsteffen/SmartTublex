@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.liskovsoft.immichserviceinterfaces"
+    namespace = "de.developerleipzig.immichserviceinterfaces"
     compileSdk = 34
 
     defaultConfig {
