@@ -72,6 +72,7 @@ dependencies {
     compileOnly("androidx.lifecycle:lifecycle-runtime:2.8.7")
     compileOnly("androidx.multidex:multidex:2.0.1")
     implementation(project(":plexapi"))
+    implementation(project(":immichapi"))
     implementation("io.reactivex.rxjava2:rxandroid:2.1.1")
     implementation("io.reactivex.rxjava2:rxjava:2.2.21")
 }
@@ -93,7 +94,9 @@ val packageWrapperApk by tasks.registering {
         "compileDebugKotlin",
         "processDebugResources",
         ":plexapi:bundleLibRuntimeToJarDebug",
-        ":plexserviceinterfaces:bundleLibRuntimeToJarDebug"
+        ":plexserviceinterfaces:bundleLibRuntimeToJarDebug",
+        ":immichapi:bundleLibRuntimeToJarDebug",
+        ":immichserviceinterfaces:bundleLibRuntimeToJarDebug"
     )
 
     val outDir = layout.buildDirectory.dir("outputs/apk/debug")
@@ -113,27 +116,28 @@ val packageWrapperApk by tasks.registering {
         val classesDir = layout.buildDirectory.dir("tmp/kotlin-classes/debug").get().asFile
         check(classesDir.isDirectory) { "Missing compiled classes: $classesDir" }
 
-        val plexApiJar = project(":plexapi").layout.buildDirectory
-            .file("intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar")
-            .get().asFile
-        val plexIfJar = project(":plexserviceinterfaces").layout.buildDirectory
-            .file("intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar")
-            .get().asFile
-        check(plexApiJar.isFile) { "Missing plexapi runtime jar: $plexApiJar" }
-        check(plexIfJar.isFile) { "Missing plexserviceinterfaces runtime jar: $plexIfJar" }
+        fun runtimeLibJar(projectName: String): java.io.File {
+            val jar = project(projectName).layout.buildDirectory
+                .file("intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar")
+                .get().asFile
+            check(jar.isFile) { "Missing $projectName runtime jar: $jar" }
+            return jar
+        }
+        val plexApiJar = runtimeLibJar(":plexapi")
+        val plexIfJar = runtimeLibJar(":plexserviceinterfaces")
+        val immichApiJar = runtimeLibJar(":immichapi")
+        val immichIfJar = runtimeLibJar(":immichserviceinterfaces")
 
         val mergeDir = work.resolve("merge-classes")
         mergeDir.mkdirs()
         project.exec {
             commandLine("cp", "-R", "${classesDir.absolutePath}/.", mergeDir.absolutePath)
         }
-        project.exec {
-            workingDir = mergeDir
-            commandLine("jar", "xf", plexIfJar.absolutePath)
-        }
-        project.exec {
-            workingDir = mergeDir
-            commandLine("jar", "xf", plexApiJar.absolutePath)
+        for (libJar in listOf(plexIfJar, plexApiJar, immichIfJar, immichApiJar)) {
+            project.exec {
+                workingDir = mergeDir
+                commandLine("jar", "xf", libJar.absolutePath)
+            }
         }
 
         val wrapperJar = work.resolve("wrapper-classes.jar")

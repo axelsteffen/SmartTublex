@@ -48,3 +48,12 @@ project(":plexserviceinterfaces").buildFileName = "../../gradle/plexserviceinter
 include(":plexapi")
 project(":plexapi").projectDir = file("PlexServiceCore/plexapi")
 project(":plexapi").buildFileName = "../../gradle/plexapi.gradle.kts"
+
+// ImmichServiceCore — build files live under gradle/ (same pattern as Plex).
+include(":immichserviceinterfaces")
+project(":immichserviceinterfaces").projectDir = file("ImmichServiceCore/immichserviceinterfaces")
+project(":immichserviceinterfaces").buildFileName = "../../gradle/immichserviceinterfaces.gradle.kts"
+
+include(":immichapi")
+project(":immichapi").projectDir = file("ImmichServiceCore/immichapi")
+project(":immichapi").buildFileName = "../../gradle/immichapi.gradle.kts"

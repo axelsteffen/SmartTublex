@@ -1,0 +1,30 @@
+# ImmichServiceCore
+
+Fork-only Immich API layer for [SmartTublex](https://github.com/axelsteffen/SmartTublex) (Android TV).
+
+## Modules
+
+| Module | Role |
+|--------|------|
+| `immichserviceinterfaces` | Immich service contracts and data interfaces |
+| `immichapi` | Retrofit implementation, MSC adapters |
+
+## Integration
+
+Consumed by SmartTublex via Gradle project includes (same pattern as PlexServiceCore).
+Intended to become a standalone git submodule once published separately.
+
+```text
+SmartTublex/
+├── PlexServiceCore/       (submodule)
+├── ImmichServiceCore/     (this tree)
+└── app/
+```
+
+## Package
+
+`com.liskovsoft.immichapi` / `com.liskovsoft.immichserviceinterfaces`
+
+## Auth
+
+Server URL + API key (`x-api-key`). Validate via `GET /api/users/me`.

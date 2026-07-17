@@ -9,6 +9,7 @@ Documentation for the SmartTublex wrapper over the upstream SmartTube APK artifa
 | Upstream | yuliskov SmartTube APK → Maven JAR via apk2maven |
 | Wrapper | Android `:app` subclasses upstream entry points |
 | Plex | [PlexServiceCore](https://github.com/axelsteffen/PlexServiceCore) submodule + SmartTublex integration code |
+| Immich | `ImmichServiceCore/` (interfaces + api; wrapper UI Phase 3) — see [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md) |
 
 **Sync** means reloading and reinstalling the SmartTube artifact — not a git merge. See [ARTIFACT_SYNC.md](ARTIFACT_SYNC.md).
 
