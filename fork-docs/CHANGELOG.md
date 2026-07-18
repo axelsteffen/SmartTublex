@@ -18,6 +18,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 
 - Multi-project: `:apk-base` (apk2maven), `:app` (wrapper), `:plexserviceinterfaces`, `:plexapi`, `:immichserviceinterfaces`, `:immichapi`
 - `packageWrapperApk`: resolve `apktool` via absolute path (`/opt/homebrew/bin`, `APKTOOL`, …) so Gradle daemon PATH misses do not fail assemble
+- `packageWrapperApk`: also merge `compileDebugJavaWithJavac` output (e.g. `SidebarServiceBridge`) into wrapper DEX — Kotlin-only pack caused runtime `NoClassDefFoundError`
 - `ImmichServiceCore/` (URL + API-key auth, albums/videos, MSC adapters); Gradle via `gradle/immich*.gradle.kts`
 - Milestone: [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md)
 - AGP bumped to `8.13.2` (application + library plugins in `settings.gradle.kts`)
@@ -45,13 +46,15 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Immich Phase 3a: `MediaSourceRegistry.Source.IMMICH`, `isImmichEnabled()`, `getImmichServiceManager()`
 - Immich Phase 3b/3c: `SidebarSectionRegistry.TYPE_IMMICH`, `ImmichBrowseInstaller` section inject, `ImmichSignInPresenter`
 - Immich Phase 3d: `ImmichBrowsePresenter` (recent videos + album rows / continue / album grid); `ImmichBrowseInstaller` `mRowMapping`; ready section is `TYPE_ROW`; `PlexChannelUploadsPresenter` also opens Immich album grids
+- Immich Phase 3e: `ImmichSettingsPresenter` (sign-in / change credentials / sign-out); `ImmichSettingsInstaller` + shared `SettingsGridInstaller` inject Plex + Immich into upstream settings grid after Accounts
+- Immich Phase 3f: `ImmichPlaybackBridge` seeds YouTube format cache; `ImmichAuthHeaderInstaller` OkHttp interceptor (`x-api-key`) + force OkHttp data source; `PlexAwareVideoLoaderController` also prepares Immich
 - Phase 3a: `PlexBrowseInstaller` injects Plex sidebar section into upstream `BrowsePresenter`; `PlexSignInPlaceholder` error fragment
 - `PlexBrowseInstaller`: pin `TYPE_PLEX` directly under Startseite (`TYPE_HOME`), not at sidebar end
 - Phase 3b: `PlexSignInPresenter` (PIN via SignInView + singleton inject), `PlexServerSelectionPresenter` (AppDialog); placeholder `onAction` wired
 - Phase 3c: `PlexBrowsePresenter.getLibraryRowsObserve` + `mRowMapping` inject; ready section is `TYPE_ROW`
 - Phase 3d: `PlexAwareVideoLoaderController` + `PlexPlaybackInstaller` seed Plex format info into upstream YouTube cache before play
 - Phase 3.4: `PlexBrowsePresenter.getLibraryGridObserve` / `getChildrenGroupObserve`; `PlexChannelUploadsPresenter` overrides `obtainUploadsObservable` + scroll continue; installed as `ChannelUploadsPresenter.sInstance`
-- Phase 3.5: `PlexSettingsPresenter` (sign-in / server pick / sign-out); `PlexSettingsInstaller` injects Plex item into upstream settings grid after Accounts
+- Phase 3.5: `PlexSettingsPresenter` (sign-in / server pick / sign-out); settings inject via shared `SettingsGridInstaller` (also Immich)
 
 ### PlexServiceCore
 
@@ -70,7 +73,10 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 | — | `PlexBrowsePresenter` / `ImmichBrowsePresenter` | Library rows + grid observe for ChannelUploads |
 | `ChannelUploadsPresenter` | `PlexChannelUploadsPresenter` | Subclass + `sInstance` inject for Plex + Immich grid drill-down |
 | — | `PlexServerSelectionPresenter` | AppDialog server list after PIN |
+| — | `PlexSettingsPresenter` / `ImmichSettingsPresenter` | Settings dialogs (sign-in / sign-out) |
+| — | `SettingsGridInstaller` (`PlexSettingsInstaller` / `ImmichSettingsInstaller`) | Shared inject into `mSettingsGridMapping` |
 | — | `MediaSourceRegistry` | Source switch / Plex + Immich manager access |
-| — | `PlexPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed |
-| `VideoLoaderController` | `PlexAwareVideoLoaderController` | Installed via `PlexPlaybackInstaller` |
+| — | `PlexPlaybackBridge` / `ImmichPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed |
+| — | `ImmichAuthHeaderInstaller` | OkHttp `x-api-key` interceptor + force OkHttp while Immich signed in |
+| `VideoLoaderController` | `PlexAwareVideoLoaderController` | Installed via `PlexPlaybackInstaller` (Plex + Immich) |
 | — | `PlexSignInPlaceholder` | Sidebar error / sign-in / connected states |
