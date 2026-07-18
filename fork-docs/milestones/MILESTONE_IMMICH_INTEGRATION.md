@@ -61,7 +61,7 @@ SmartTublex/
 | 1.3 | List albums (`GET /api/albums`) | done |
 | 1.4 | Album / recent video pages (`POST /api/search/metadata`) | done |
 | 1.5 | Resolve stream URL for one video asset | done |
-| 1.6 | Integration test against local Immich server | open |
+| 1.6 | Integration tests (MockWebServer: sign-in / albums / stream) | done |
 
 ### Phase 2: Adapter Layer
 
@@ -77,7 +77,7 @@ SmartTublex/
 
 | Step | Description | Status |
 |------|-------------|--------|
-| 3a | `MediaSourceRegistry.Source.IMMICH` + `getImmichServiceManager()` | open |
+| 3a | `MediaSourceRegistry.Source.IMMICH` + `getImmichServiceManager()` | done |
 | 3b | `SidebarSectionRegistry.TYPE_IMMICH` (e.g. `101`) | open |
 | 3c | Sign-in UI (server URL + API key) — `ImmichSignInPresenter` | open |
 | 3d | Browse rows (albums / recent videos) — `ImmichBrowseInstaller` / Presenter | open |
