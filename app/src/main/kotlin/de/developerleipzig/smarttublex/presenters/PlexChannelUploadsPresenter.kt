@@ -16,10 +16,10 @@ import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
 
 /**
- * Phase 3.4: Plex library grid + show/season children via upstream [ChannelUploadsView].
+ * Phase 3.4 / Immich 3d: Plex + Immich grids via upstream [ChannelUploadsView].
  *
  * Upstream [ChannelUploadsPresenter.obtainUploadsObservable] only knows YouTube reload keys.
- * We install this subclass as `sInstance` so browse-stub clicks load [PlexBrowsePresenter.getLibraryGridObserve].
+ * We install this subclass as `sInstance` so browse-stub clicks load wrapper grids.
  */
 class PlexChannelUploadsPresenter private constructor(context: Context) :
     ChannelUploadsPresenter(context) {
@@ -29,6 +29,7 @@ class PlexChannelUploadsPresenter private constructor(context: Context) :
 
         PlexBrowsePresenter.getLibraryGridObserve(item)?.let { return it }
         PlexBrowsePresenter.getChildrenGroupObserve(item)?.let { return it }
+        ImmichBrowsePresenter.getAlbumGridObserve(item)?.let { return it }
 
         return super.obtainUploadsObservable(item)
     }
@@ -47,7 +48,15 @@ class PlexChannelUploadsPresenter private constructor(context: Context) :
         if (PlexBrowsePresenter.isPlexGroup(group.mediaGroup)) {
             SoftLog.d(TAG, "onScrollEnd: Plex group title: " + group.title)
             if (!isScrollInProgress()) {
-                continuePlexGroup(group)
+                continueWrapperGroup(group, PlexBrowsePresenter.continueGroupObserve(group.mediaGroup))
+            }
+            return
+        }
+
+        if (ImmichBrowsePresenter.isImmichGroup(group.mediaGroup)) {
+            SoftLog.d(TAG, "onScrollEnd: Immich group title: " + group.title)
+            if (!isScrollInProgress()) {
+                continueWrapperGroup(group, ImmichBrowsePresenter.continueGroupObserve(group.mediaGroup))
             }
             return
         }
@@ -63,28 +72,39 @@ class PlexChannelUploadsPresenter private constructor(context: Context) :
             !item.hasNestedItems() &&
             !item.hasPlaylist()
         ) {
-            clear()
-            channel = item
-            viewManager.startView(ChannelUploadsView::class.java)
-            if (view != null) {
-                updateFromObservable(obtainUploadsObservable(item))
-            }
+            openWrapperChannel(item)
+            return
+        }
+        // WRAPPER: Immich album browse stubs (reloadPageKey = album id; may also set playlistId)
+        if (item != null &&
+            ImmichBrowsePresenter.isImmichVideo(item) &&
+            item.hasReloadPageKey()
+        ) {
+            openWrapperChannel(item)
             return
         }
         super.openChannel(item)
     }
 
-    private fun continuePlexGroup(group: VideoGroup) {
+    private fun openWrapperChannel(item: Video) {
+        clear()
+        channel = item
+        viewManager.startView(ChannelUploadsView::class.java)
+        if (view != null) {
+            updateFromObservable(obtainUploadsObservable(item))
+        }
+    }
+
+    private fun continueWrapperGroup(group: VideoGroup, continuation: Observable<MediaGroup>?) {
         val uploadsView = view as? ChannelUploadsView
         if (uploadsView == null) {
             SoftLog.e(TAG, "Can't continue group. The view is null.")
             return
         }
 
-        SoftLog.d(TAG, "continueGroup: Plex start continue group: " + group.title)
+        SoftLog.d(TAG, "continueGroup: start continue group: " + group.title)
         uploadsView.showProgressBar(true)
 
-        val continuation = PlexBrowsePresenter.continueGroupObserve(group.mediaGroup)
         if (continuation == null) {
             uploadsView.showProgressBar(false)
             return
@@ -115,7 +135,7 @@ class PlexChannelUploadsPresenter private constructor(context: Context) :
         val uploadsView = view as? ChannelUploadsView ?: return
         if (group == null) return
 
-        SoftLog.d(TAG, "update: Start loading a Plex group...")
+        SoftLog.d(TAG, "update: Start loading a wrapper group...")
         invokeDisposeActions()
         uploadsView.showProgressBar(true)
         val disposable = group.subscribe(

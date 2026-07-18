@@ -8,11 +8,13 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter
 import de.developerleipzig.immichapi.ImmichServiceManager
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
+import de.developerleipzig.smarttublex.presenters.ImmichBrowsePresenter
+import io.reactivex.Observable
 
 /**
- * Injects the Immich [BrowseSection] into upstream [BrowsePresenter].
+ * Injects the Immich [BrowseSection] (+ row observable when ready) into upstream [BrowsePresenter].
  *
- * Row observables (albums / recent videos) arrive in Phase 3d.
+ * Upstream has no Immich hooks; private maps are filled via reflection.
  */
 object ImmichBrowseInstaller {
     @Volatile
@@ -41,6 +43,11 @@ object ImmichBrowseInstaller {
         val ready = SidebarSectionRegistry.isImmichReady(appContext)
         val section = SidebarSectionRegistry.createImmichSection(appContext)
         if (!injectSectionMapping(presenter, section)) {
+            return
+        }
+        // Only attach row loading when the section is actually a row browser.
+        val loadRows = ready && section.type == BrowseSection.TYPE_ROW
+        if (!injectRowMapping(presenter, loadRows)) {
             return
         }
 
@@ -125,6 +132,30 @@ object ImmichBrowseInstaller {
             Log.e(
                 SmartTublexApplication.TAG,
                 "ImmichBrowseInstaller: failed to inject mSectionsMapping",
+                t
+            )
+            false
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun injectRowMapping(presenter: BrowsePresenter, ready: Boolean): Boolean {
+        return try {
+            val field = BrowsePresenter::class.java.getDeclaredField("mRowMapping")
+            field.isAccessible = true
+            val mapping = field.get(presenter) as MutableMap<Int, Observable<List<MediaGroup>>>
+            if (ready) {
+                mapping[SidebarSectionRegistry.TYPE_IMMICH] =
+                    ImmichBrowsePresenter.getLibraryRowsObserve()
+                Log.i(SmartTublexApplication.TAG, "ImmichBrowseInstaller: mRowMapping[TYPE_IMMICH] set")
+            } else {
+                mapping.remove(SidebarSectionRegistry.TYPE_IMMICH)
+            }
+            true
+        } catch (t: Throwable) {
+            Log.e(
+                SmartTublexApplication.TAG,
+                "ImmichBrowseInstaller: failed to inject mRowMapping",
                 t
             )
             false

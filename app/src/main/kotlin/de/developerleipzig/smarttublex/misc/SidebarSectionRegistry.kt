@@ -90,14 +90,13 @@ object SidebarSectionRegistry {
             )
         }
         if (isImmichReady(context)) {
-            // Until Phase 3d rows exist, show connected placeholder (not an empty TYPE_ROW).
+            // WRAPPER: 3d — rows via ImmichBrowseInstaller mRowMapping
             return BrowseSection(
                 TYPE_IMMICH,
                 TITLE_IMMICH,
-                BrowseSection.TYPE_ERROR,
+                BrowseSection.TYPE_ROW,
                 R.drawable.icon_playlist,
-                false,
-                ImmichSignInPlaceholder(context, ImmichSignInPlaceholder.Mode.CONNECTED)
+                false
             )
         }
         return BrowseSection(
