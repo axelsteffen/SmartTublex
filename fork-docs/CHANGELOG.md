@@ -48,6 +48,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Immich Phase 3d: `ImmichBrowsePresenter` (recent videos + album rows / continue / album grid); `ImmichBrowseInstaller` `mRowMapping`; ready section is `TYPE_ROW`; `PlexChannelUploadsPresenter` also opens Immich album grids
 - Immich Phase 3e: `ImmichSettingsPresenter` (sign-in / change credentials / sign-out); `ImmichSettingsInstaller` + shared `SettingsGridInstaller` inject Plex + Immich into upstream settings grid after Accounts
 - Immich Phase 3f: `ImmichPlaybackBridge` seeds YouTube format cache; `ImmichAuthHeaderInstaller` OkHttp interceptor (`x-api-key`) + force OkHttp data source; `PlexAwareVideoLoaderController` also prepares Immich
+- Fix Immich sidebar Sign-in: pass BrowseActivity context into `SimpleEditDialog` (was `applicationContext` → `token null`)
 - Phase 3a: `PlexBrowseInstaller` injects Plex sidebar section into upstream `BrowsePresenter`; `PlexSignInPlaceholder` error fragment
 - `PlexBrowseInstaller`: pin `TYPE_PLEX` directly under Startseite (`TYPE_HOME`), not at sidebar end
 - Phase 3b: `PlexSignInPresenter` (PIN via SignInView + singleton inject), `PlexServerSelectionPresenter` (AppDialog); placeholder `onAction` wired
