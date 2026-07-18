@@ -28,3 +28,11 @@ SmartTublex/
 ## Auth
 
 Server URL + API key (`x-api-key`). Validate via `GET /api/users/me`.
+
+## Tests
+
+```bash
+./gradlew :immichapi:testDebugUnitTest
+```
+
+Service tests use OkHttp MockWebServer (no live Immich server, no Robolectric).

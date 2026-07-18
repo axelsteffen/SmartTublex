@@ -16,6 +16,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    testOptions {
+        // Avoid Robolectric: SmartTube's shaded ASM breaks ClassInstrumentor.
+        unitTests.isReturnDefaultValues = true
+    }
+
     sourceSets.getByName("main").java.srcDirs("src/main/java")
 
     packaging {
@@ -37,4 +42,7 @@ dependencies {
     implementation("androidx.annotation:annotation:1.1.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:3.12.13")
+    // Prefs superclass + MSC FormatInfo interfaces live in the SmartTube artifact.
+    testImplementation("com.liskovsoft.smarttubetv:smarttube:latest")
 }

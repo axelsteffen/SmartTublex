@@ -8,10 +8,13 @@ import androidx.annotation.Nullable;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.sharedutils.prefs.SharedPreferencesBase;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Persistent Immich server URL, API key, and cached user profile.
  */
-public final class ImmichPrefs extends SharedPreferencesBase {
+public final class ImmichPrefs {
     private static final String SHARED_PREFERENCES_NAME = ImmichPrefs.class.getName();
     private static final String SERVER_URL = "immich_server_url";
     private static final String API_KEY = "immich_api_key";
@@ -23,8 +26,10 @@ public final class ImmichPrefs extends SharedPreferencesBase {
     @SuppressLint("StaticFieldLeak")
     private static ImmichPrefs sInstance;
 
-    private ImmichPrefs(Context context) {
-        super(context, SHARED_PREFERENCES_NAME);
+    private final Store mStore;
+
+    private ImmichPrefs(Store store) {
+        mStore = store;
     }
 
     public static synchronized ImmichPrefs instance() {
@@ -34,16 +39,21 @@ public final class ImmichPrefs extends SharedPreferencesBase {
                 throw new IllegalStateException(
                         "ImmichPrefs requires GlobalPreferences (or instance(Context)) first");
             }
-            sInstance = new ImmichPrefs(context);
+            sInstance = new ImmichPrefs(sharedStore(context));
         }
         return sInstance;
     }
 
     public static synchronized ImmichPrefs instance(Context context) {
         if (sInstance == null) {
-            sInstance = new ImmichPrefs(context.getApplicationContext());
+            sInstance = new ImmichPrefs(sharedStore(context.getApplicationContext()));
         }
         return sInstance;
+    }
+
+    /** In-memory prefs for JVM unit tests (no Android SharedPreferences). */
+    public static ImmichPrefs createInMemory() {
+        return new ImmichPrefs(new MemoryStore());
     }
 
     /** Clears singleton — for unit tests only. */
@@ -51,53 +61,78 @@ public final class ImmichPrefs extends SharedPreferencesBase {
         sInstance = null;
     }
 
+    private static Store sharedStore(Context context) {
+        final SharedPreferencesBase prefs = new SharedPreferencesBase(context, SHARED_PREFERENCES_NAME) {};
+        return new Store() {
+            @Override
+            public String getString(String key, String defValue) {
+                return prefs.getString(key, defValue);
+            }
+
+            @Override
+            public void putString(String key, String value) {
+                prefs.putString(key, value);
+            }
+
+            @Override
+            public boolean getBoolean(String key, boolean defValue) {
+                return prefs.getBoolean(key, defValue);
+            }
+
+            @Override
+            public void putBoolean(String key, boolean value) {
+                prefs.putBoolean(key, value);
+            }
+        };
+    }
+
     @Nullable
     public String getServerUrl() {
-        return emptyToNull(getString(SERVER_URL, null));
+        return emptyToNull(mStore.getString(SERVER_URL, null));
     }
 
     public void setServerUrl(@Nullable String url) {
-        putString(SERVER_URL, nullToEmpty(url));
+        mStore.putString(SERVER_URL, nullToEmpty(url));
         setValidated(false);
     }
 
     @Nullable
     public String getApiKey() {
-        return emptyToNull(getString(API_KEY, null));
+        return emptyToNull(mStore.getString(API_KEY, null));
     }
 
     public void setApiKey(@Nullable String apiKey) {
-        putString(API_KEY, nullToEmpty(apiKey));
+        mStore.putString(API_KEY, nullToEmpty(apiKey));
         setValidated(false);
     }
 
     public boolean isValidated() {
-        return getBoolean(VALIDATED, false);
+        return mStore.getBoolean(VALIDATED, false);
     }
 
     public void setValidated(boolean validated) {
-        putBoolean(VALIDATED, validated);
+        mStore.putBoolean(VALIDATED, validated);
     }
 
     @Nullable
     public String getUserId() {
-        return emptyToNull(getString(USER_ID, null));
+        return emptyToNull(mStore.getString(USER_ID, null));
     }
 
     @Nullable
     public String getUserName() {
-        return emptyToNull(getString(USER_NAME, null));
+        return emptyToNull(mStore.getString(USER_NAME, null));
     }
 
     @Nullable
     public String getUserEmail() {
-        return emptyToNull(getString(USER_EMAIL, null));
+        return emptyToNull(mStore.getString(USER_EMAIL, null));
     }
 
     public void setUserProfile(@Nullable String id, @Nullable String name, @Nullable String email) {
-        putString(USER_ID, nullToEmpty(id));
-        putString(USER_NAME, nullToEmpty(name));
-        putString(USER_EMAIL, nullToEmpty(email));
+        mStore.putString(USER_ID, nullToEmpty(id));
+        mStore.putString(USER_NAME, nullToEmpty(name));
+        mStore.putString(USER_EMAIL, nullToEmpty(email));
     }
 
     public void clear() {
@@ -114,5 +149,40 @@ public final class ImmichPrefs extends SharedPreferencesBase {
     @Nullable
     private static String emptyToNull(@Nullable String value) {
         return value != null && !value.isEmpty() ? value : null;
+    }
+
+    private interface Store {
+        String getString(String key, String defValue);
+
+        void putString(String key, String value);
+
+        boolean getBoolean(String key, boolean defValue);
+
+        void putBoolean(String key, boolean value);
+    }
+
+    private static final class MemoryStore implements Store {
+        private final Map<String, String> mStrings = new HashMap<>();
+        private final Map<String, Boolean> mBooleans = new HashMap<>();
+
+        @Override
+        public String getString(String key, String defValue) {
+            return mStrings.containsKey(key) ? mStrings.get(key) : defValue;
+        }
+
+        @Override
+        public void putString(String key, String value) {
+            mStrings.put(key, value);
+        }
+
+        @Override
+        public boolean getBoolean(String key, boolean defValue) {
+            return mBooleans.containsKey(key) ? mBooleans.get(key) : defValue;
+        }
+
+        @Override
+        public void putBoolean(String key, boolean value) {
+            mBooleans.put(key, value);
+        }
     }
 }
