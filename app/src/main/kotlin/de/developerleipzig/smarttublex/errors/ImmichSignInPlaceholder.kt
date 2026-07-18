@@ -3,6 +3,7 @@ package de.developerleipzig.smarttublex.errors
 import android.content.Context
 import android.util.Log
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter
 import de.developerleipzig.immichapi.prefs.ImmichPrefs
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
@@ -36,7 +37,13 @@ class ImmichSignInPlaceholder(
             }
             Mode.SIGN_IN -> {
                 Log.i(SmartTublexApplication.TAG, "ImmichSignInPlaceholder: starting URL + API key sign-in")
-                ImmichSignInPresenter.instance(appContext).start()
+                // SimpleEditDialog needs an Activity window token — not applicationContext
+                val activityCtx = try {
+                    BrowsePresenter.instance(appContext).context
+                } catch (_: Throwable) {
+                    null
+                } ?: appContext
+                ImmichSignInPresenter.instance(activityCtx).start()
             }
         }
     }

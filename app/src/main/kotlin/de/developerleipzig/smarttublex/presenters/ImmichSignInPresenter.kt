@@ -31,7 +31,7 @@ class ImmichSignInPresenter private constructor(context: Context) : BasePresente
     }
 
     fun start() {
-        val ctx = context ?: return
+        val ctx = activityContext() ?: return
         if (!MediaSourceRegistry.isImmichEnabled()) {
             MessageHelpers.showMessage(ctx, "Immich integration is not available")
             return
@@ -40,8 +40,31 @@ class ImmichSignInPresenter private constructor(context: Context) : BasePresente
         promptServerUrl()
     }
 
+    /**
+     * [SimpleEditDialog] requires an Activity; [BasePresenter.getContext] may fall back
+     * to applicationContext when started from a sidebar placeholder.
+     */
+    private fun activityContext(): Context? {
+        val ctx = context ?: return null
+        if (ctx is android.app.Activity) {
+            setContext(ctx)
+            return ctx
+        }
+        return try {
+            val browseCtx = BrowsePresenter.instance(ctx).context
+            if (browseCtx != null) {
+                setContext(browseCtx)
+                browseCtx
+            } else {
+                ctx
+            }
+        } catch (_: Throwable) {
+            ctx
+        }
+    }
+
     private fun promptServerUrl() {
-        val ctx = context ?: return
+        val ctx = activityContext() ?: return
         val signIn = MediaSourceRegistry.getImmichServiceManager().signInService
         val existing = signIn.serverUrl ?: ""
         SimpleEditDialog.show(
@@ -62,7 +85,7 @@ class ImmichSignInPresenter private constructor(context: Context) : BasePresente
     }
 
     private fun promptApiKey() {
-        val ctx = context ?: return
+        val ctx = activityContext() ?: return
         val signIn = MediaSourceRegistry.getImmichServiceManager().signInService
         val existing = signIn.apiKey ?: ""
         SimpleEditDialog.showPassword(
