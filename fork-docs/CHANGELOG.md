@@ -11,12 +11,15 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `TV_DEPLOY.md`: document wrong-APK ClassNotFoundException symptom (`Process: com.smarttublex`)
 - `TV_DEPLOY.md`: document `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED` for stale SplashActivity alias target
 - `BRANDING.md`: SmartTublex logo swap (`Beta Version` + `unofficial SmartTube fork`) via `packageWrapperApk`
+- Immich milestone: Phase 1.6 (MockWebServer IT) + Phase 3a (`MediaSourceRegistry.IMMICH`) marked done in [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md)
 
 ### build
 
 - Multi-project: `:apk-base` (apk2maven), `:app` (wrapper), `:plexserviceinterfaces`, `:plexapi`, `:immichserviceinterfaces`, `:immichapi`
 - `ImmichServiceCore/` (URL + API-key auth, albums/videos, MSC adapters); Gradle via `gradle/immich*.gradle.kts`
 - Milestone: [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md)
+- AGP bumped to `8.13.2` (application + library plugins in `settings.gradle.kts`)
+- `:immichapi` test deps: MockWebServer + SmartTube artifact; `unitTests.returnDefaultValues = true`
 - `packageWrapperApk` patches upstream APK with SmartTublex + Plex DEX and signs debug APK
 - `packageWrapperApk` also overwrites `intermediates/apk/debug/app-debug.apk` so Android Studio Run / `installDebug` do not install the AGP stub (`de.developerleipzig.smarttublex`) missing `MainApplication`
 - `packageWrapperApk` also rewrites `activity-alias` `android:targetActivity` from `SplashActivity` → `SmartTublexSplashActivity` (avoids `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED`)
@@ -25,11 +28,18 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `:app` adds `compileOnly` AndroidX AARs (`core` / `activity` / `fragment` / …) so IDE/Kotlin can resolve supertypes of `SplashActivity` / `MainApplication` from the fat JAR
 - Plex modules compile against `com.liskovsoft.smarttubetv:smarttube` (no MSC source)
 
+### ImmichServiceCore
+
+- Phase 1.6: MockWebServer service tests (`ImmichSignInServiceImplTest`, `ImmichLibraryServiceImplTest`, `ImmichMediaServiceImplTest`)
+- `ImmichPrefs.createInMemory()` for JVM unit tests (no Robolectric; avoids SmartTube ASM clash)
+- README: `./gradlew :immichapi:testDebugUnitTest`
+
 ### app
 
 - Package root: `de.developerleipzig.smarttublex` (Gradle group `de.developer-leipzig.smarttublex`)
 - `SmartTublexApplication` / `SmartTublexSplashActivity` wrappers
 - `MediaSourceRegistry`, `SidebarSectionRegistry`, `PlexPlaybackBridge`
+- Immich Phase 3a: `MediaSourceRegistry.Source.IMMICH`, `isImmichEnabled()`, `getImmichServiceManager()`
 - Phase 3a: `PlexBrowseInstaller` injects Plex sidebar section into upstream `BrowsePresenter`; `PlexSignInPlaceholder` error fragment
 - `PlexBrowseInstaller`: pin `TYPE_PLEX` directly under Startseite (`TYPE_HOME`), not at sidebar end
 - Phase 3b: `PlexSignInPresenter` (PIN via SignInView + singleton inject), `PlexServerSelectionPresenter` (AppDialog); placeholder `onAction` wired
@@ -55,7 +65,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 | — | `PlexBrowsePresenter` | Library rows + library grid / children observe for ChannelUploads |
 | `ChannelUploadsPresenter` | `PlexChannelUploadsPresenter` | Subclass + `sInstance` inject for Movies/TV grid drill-down |
 | — | `PlexServerSelectionPresenter` | AppDialog server list after PIN |
-| — | `MediaSourceRegistry` | Source switch / Plex manager access |
+| — | `MediaSourceRegistry` | Source switch / Plex + Immich manager access |
 | — | `PlexPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed |
 | `VideoLoaderController` | `PlexAwareVideoLoaderController` | Installed via `PlexPlaybackInstaller` |
 | — | `PlexSignInPlaceholder` | Sidebar error / sign-in / connected states |
