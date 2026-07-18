@@ -6,20 +6,15 @@ Replace upstream SmartTube launcher/in-app branding with the SmartTublex logo du
 
 | File | Role |
 |------|------|
-| [`images/logo/smarttublex.png`](../images/logo/smarttublex.png) | Symbol master (no text) |
-| [`images/logo/smarttublex_branded.png`](../images/logo/smarttublex_branded.png) | Master with required text |
-| [`images/logo/generated/`](../images/logo/generated/) | Sized PNGs copied into the decoded APK |
+| [`images/logo/smarttublex.png`](../images/logo/smarttublex.png) | Full release logo (icon + wordmark + tagline) |
+| [`images/logo/smarttublex_beta.png`](../images/logo/smarttublex_beta.png) | Full beta logo (same + Beta badge) |
+| [`images/logo/smarttublex_branded.png`](../images/logo/smarttublex_branded.png) | Tall master derived from the beta logo |
+| [`images/logo/generated/`](../images/logo/generated/) | Sized PNGs from the **beta** logo (copied into the decoded APK) |
+| [`images/logo/generated_release/`](../images/logo/generated_release/) | Optional sized PNGs from the release logo |
 | [`images/thumbnails/`](../images/thumbnails/) | Section card thumbnail masters |
 | [`images/thumbnails/generated/`](../images/thumbnails/generated/) | Card-sized PNGs (`640×360`) copied into the decoded APK |
 
-## Required text (exact typography)
-
-| Line | Exact wording |
-|------|----------------|
-| Primary | `Beta Version` (never shorten to `BETA`) |
-| Disclaimer | `unofficial SmartTube fork` |
-
-If space is tight, drop the disclaimer — do **not** rename the primary line.
+The masters already include all branding text. Generation only scales and letterboxes onto black — no text overlay.
 
 ## How it is applied
 
@@ -37,18 +32,23 @@ Upstream SmartTube sources are not modified. The `:app` stub manifest does not n
 
 ## Size matrix
 
-| Asset | Size | Text |
-|-------|------|------|
-| `app_banner.png` | 640×360 | Symbol + `Beta Version` + `unofficial SmartTube fork` |
-| `app_icon.png` / `app_icon_alt.png` | 320×320 | Symbol + `Beta Version` (+ disclaimer if readable) |
-| `app_logo*.png` | 180×180 | Symbol + `Beta Version` |
-| `ic_launcher` (mdpi–xxhdpi) | 48–144 | Symbol; `Beta Version` only when readable |
-| `all_movies.png` / `all_tv_shows.png` | 640×360 | Section card art (no text overlay) |
+| Asset | Size | Layout |
+|-------|------|--------|
+| `app_banner.png` | 640×360 | Content trimmed, then contain-fit (no crop) |
+| `app_icon.png` / `app_icon_alt.png` | 320×320 | Full logo contain-fit |
+| `app_logo*.png` | 180×180 | Full logo contain-fit |
+| `ic_launcher` (mdpi–xxhdpi) | 48–144 | Full logo contain-fit |
+| `all_movies.png` / `all_tv_shows.png` | 640×360 | Section card art (thumbnails script) |
 
 ## Regenerating assets
 
 ```bash
+# Beta → images/logo/generated/ (default; used by packageWrapperApk)
 images/logo/.venv/bin/python images/logo/generate_branding.py
+
+# Also write release sizes → images/logo/generated_release/
+images/logo/.venv/bin/python images/logo/generate_branding.py --variant both
+
 images/logo/.venv/bin/python images/thumbnails/generate_thumbnails.py
 ```
 

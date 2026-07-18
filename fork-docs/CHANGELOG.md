@@ -11,7 +11,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `TV_DEPLOY.md`: document wrong-APK ClassNotFoundException symptom (`Process: com.smarttublex`)
 - `TV_DEPLOY.md`: document `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED` for stale SplashActivity alias target
 - `scripts/deploy-tv.sh`: one-shot build + `adb install` + start splash (`--ip`, `--no-build`, `--log`)
-- `BRANDING.md`: SmartTublex logo swap (`Beta Version` + `unofficial SmartTube fork`) via `packageWrapperApk`
+- `BRANDING.md`: dual masters (`smarttublex.png` / `smarttublex_beta.png`); size via contain-fit (no text overlay); beta → `generated/`
 - Immich milestone: Phase 1.6 (MockWebServer IT) + Phase 3a (`MediaSourceRegistry.IMMICH`) marked done in [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md)
 
 ### build
@@ -37,6 +37,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 
 ### app
 
+- Branding: `generate_branding.py` sizes full logos (`--variant beta|release|both`); `packageWrapperApk` still uses `images/logo/generated/` (beta)
 - Package root: `de.developerleipzig.smarttublex` (Gradle group `de.developer-leipzig.smarttublex`)
 - `SmartTublexApplication` / `SmartTublexSplashActivity` wrappers
 - `MediaSourceRegistry`, `SidebarSectionRegistry`, `PlexPlaybackBridge`
