@@ -1,6 +1,32 @@
 # Deploy Debug APK to Android TV
 
-## Build
+## Quick deploy (script)
+
+From the repo root, with the TV already reachable via ADB (USB or network):
+
+```bash
+./scripts/deploy-tv.sh
+```
+
+Options:
+
+| Flag / env | Effect |
+|------------|--------|
+| `--ip <addr>` or `TV_IP=…` | `adb connect <addr>:5555` first (`ADB_PORT` overrides port) |
+| `--no-build` | Skip Gradle; install existing `app-debug.apk` |
+| `--no-start` | Install only; do not launch splash |
+| `--log` | After start, follow `adb logcat -s SmartTublex:D` |
+
+Examples:
+
+```bash
+./scripts/deploy-tv.sh --ip 192.168.1.42 --log
+TV_IP=192.168.1.42 ./scripts/deploy-tv.sh --no-build
+```
+
+The script runs: `assembleDebug` → `adb install -r` → start `SmartTublexSplashActivity`.
+
+## Build (manual)
 
 The Gradle daemon is pinned to JDK 21 (`gradle/gradle-daemon-jvm.properties`). A shell default of Java 25 is OK.
 
@@ -15,7 +41,7 @@ APK path (typical):
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Install on TV (network ADB)
+## Install on TV (network ADB, manual)
 
 1. On the TV: enable **Developer options** → **Network debugging** / ADB.
 2. Note the TV IP address.
@@ -51,6 +77,7 @@ APK (~35MB, `org.smarttube.beta`). Reinstall from
 
 ```bash
 adb logcat -s SmartTublex:D
+# or: ./scripts/deploy-tv.sh --no-build --log
 ```
 
 - Phase 3a: sidebar has a **Plex** entry (sign-in placeholder). Logcat:

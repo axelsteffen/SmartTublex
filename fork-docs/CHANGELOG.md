@@ -10,6 +10,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Cursor rules/skills adapted for wrapper + apk2maven sync semantics
 - `TV_DEPLOY.md`: document wrong-APK ClassNotFoundException symptom (`Process: com.smarttublex`)
 - `TV_DEPLOY.md`: document `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED` for stale SplashActivity alias target
+- `scripts/deploy-tv.sh`: one-shot build + `adb install` + start splash (`--ip`, `--no-build`, `--log`)
 - `BRANDING.md`: SmartTublex logo swap (`Beta Version` + `unofficial SmartTube fork`) via `packageWrapperApk`
 - Immich milestone: Phase 1.6 (MockWebServer IT) + Phase 3a (`MediaSourceRegistry.IMMICH`) marked done in [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md)
 
