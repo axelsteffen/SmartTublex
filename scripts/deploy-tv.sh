@@ -15,6 +15,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Homebrew tools (apktool) — Gradle daemons / minimal PATHs often omit this.
+for brew_bin in /opt/homebrew/bin /usr/local/bin; do
+  if [[ -d "$brew_bin" && ":$PATH:" != *":$brew_bin:"* ]]; then
+    PATH="$brew_bin:$PATH"
+  fi
+done
+export PATH
+
 PACKAGE_ID="org.smarttube.beta"
 SPLASH_ACTIVITY="de.developerleipzig.smarttublex.SmartTublexSplashActivity"
 APK="app/build/outputs/apk/debug/app-debug.apk"

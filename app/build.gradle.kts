@@ -28,6 +28,32 @@ val smarttubeApk = file(
         "$smarttubeVersion/smarttube-$smarttubeVersion-apk.apk"
 )
 
+/**
+ * Gradle daemons often omit Homebrew from PATH; resolve tools by absolute path.
+ */
+fun resolveExecutable(name: String, vararg extraDirs: String): File {
+    val envOverride = System.getenv(name.uppercase())
+    val candidates = buildList {
+        if (!envOverride.isNullOrBlank()) add(file(envOverride))
+        val pathDirs = (System.getenv("PATH") ?: "").split(File.pathSeparator)
+        for (dir in pathDirs) {
+            if (dir.isNotBlank()) add(file("$dir/$name"))
+        }
+        add(file("/opt/homebrew/bin/$name"))
+        add(file("/usr/local/bin/$name"))
+        for (dir in extraDirs) {
+            add(file("$dir/$name"))
+        }
+    }
+    return candidates.firstOrNull { it.isFile && it.canExecute() }
+        ?: error(
+            "Missing executable '$name' (set ${name.uppercase()}=… or install via Homebrew). " +
+                "Searched PATH plus /opt/homebrew/bin and /usr/local/bin."
+        )
+}
+
+val apktoolExe = resolveExecutable("apktool")
+
 android {
     namespace = "de.developerleipzig.smarttublex"
     compileSdk = 34
@@ -165,7 +191,7 @@ val packageWrapperApk by tasks.registering {
         // Single-threaded decode avoids apktool 3.x races writing values-*/ XML under -j > 1
         project.exec {
             commandLine(
-                "apktool", "d",
+                apktoolExe.absolutePath, "d",
                 "-j", "1",
                 smarttubeApk.absolutePath,
                 "-o", decoded.absolutePath,
@@ -260,7 +286,11 @@ val packageWrapperApk by tasks.registering {
 
         val unsigned = work.resolve("unsigned.apk")
         project.exec {
-            commandLine("apktool", "b", decoded.absolutePath, "-o", unsigned.absolutePath)
+            commandLine(
+                apktoolExe.absolutePath, "b",
+                decoded.absolutePath,
+                "-o", unsigned.absolutePath
+            )
         }
 
         val aligned = work.resolve("aligned.apk")
