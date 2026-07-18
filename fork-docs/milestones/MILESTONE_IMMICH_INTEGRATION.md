@@ -10,7 +10,7 @@ Browse and play Immich media inside the SmartTublex wrapper over the upstream Sm
 |-----------|--------|
 | Upstream SmartTube APK (apk2maven) | Wired; wrapper Application/Splash |
 | `ImmichServiceCore` (interfaces + api) | Phase 0–2 in this milestone |
-| Wrapper registries / browse / playback | Phase 3 (documented; not yet implemented) |
+| Wrapper registries / browse / playback | Phase 3 (browse rows done; settings + playback open) |
 
 ## Architecture Principles
 
@@ -80,7 +80,7 @@ SmartTublex/
 | 3a | `MediaSourceRegistry.Source.IMMICH` + `getImmichServiceManager()` | done |
 | 3b | `SidebarSectionRegistry.TYPE_IMMICH` (e.g. `101`) | done |
 | 3c | Sign-in UI (server URL + API key) — `ImmichSignInPresenter` | done |
-| 3d | Browse rows (albums / recent videos) — `ImmichBrowsePresenter` + row mapping | open |
+| 3d | Browse rows (albums / recent videos) — `ImmichBrowsePresenter` + row mapping | done |
 | 3e | Settings entry — `ImmichSettingsInstaller` / Presenter | open |
 | 3f | `ImmichPlaybackBridge` (video; ExoPlayer needs `x-api-key` request headers) | open |
 | 3g | Init in `SmartTublexApplication.onCreate()` | done |
@@ -91,7 +91,7 @@ SmartTublex/
 |---------|-------------|---------------|
 | Source switch | [`MediaSourceRegistry`](../../app/src/main/kotlin/de/developerleipzig/smarttublex/misc/MediaSourceRegistry.kt) | add `IMMICH` |
 | Sidebar ready gate | `SidebarSectionRegistry` | `TYPE_IMMICH` + prefs check |
-| Browse | `PlexBrowseInstaller` / `PlexBrowsePresenter` | Immich equivalents |
+| Browse | `PlexBrowseInstaller` / `PlexBrowsePresenter` | `ImmichBrowseInstaller` / `ImmichBrowsePresenter` |
 | Auth UI | `PlexSignInPresenter` | URL + API key form (no PIN) |
 | Settings | `PlexSettingsInstaller` | Immich settings |
 | Playback | `PlexPlaybackBridge` | Immich bridge; attach `x-api-key` to media requests |

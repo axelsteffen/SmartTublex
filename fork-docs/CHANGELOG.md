@@ -17,6 +17,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 ### build
 
 - Multi-project: `:apk-base` (apk2maven), `:app` (wrapper), `:plexserviceinterfaces`, `:plexapi`, `:immichserviceinterfaces`, `:immichapi`
+- `packageWrapperApk`: resolve `apktool` via absolute path (`/opt/homebrew/bin`, `APKTOOL`, …) so Gradle daemon PATH misses do not fail assemble
 - `ImmichServiceCore/` (URL + API-key auth, albums/videos, MSC adapters); Gradle via `gradle/immich*.gradle.kts`
 - Milestone: [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md)
 - AGP bumped to `8.13.2` (application + library plugins in `settings.gradle.kts`)
@@ -42,6 +43,8 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `SmartTublexApplication` / `SmartTublexSplashActivity` wrappers
 - `MediaSourceRegistry`, `SidebarSectionRegistry`, `PlexPlaybackBridge`
 - Immich Phase 3a: `MediaSourceRegistry.Source.IMMICH`, `isImmichEnabled()`, `getImmichServiceManager()`
+- Immich Phase 3b/3c: `SidebarSectionRegistry.TYPE_IMMICH`, `ImmichBrowseInstaller` section inject, `ImmichSignInPresenter`
+- Immich Phase 3d: `ImmichBrowsePresenter` (recent videos + album rows / continue / album grid); `ImmichBrowseInstaller` `mRowMapping`; ready section is `TYPE_ROW`; `PlexChannelUploadsPresenter` also opens Immich album grids
 - Phase 3a: `PlexBrowseInstaller` injects Plex sidebar section into upstream `BrowsePresenter`; `PlexSignInPlaceholder` error fragment
 - `PlexBrowseInstaller`: pin `TYPE_PLEX` directly under Startseite (`TYPE_HOME`), not at sidebar end
 - Phase 3b: `PlexSignInPresenter` (PIN via SignInView + singleton inject), `PlexServerSelectionPresenter` (AppDialog); placeholder `onAction` wired
@@ -62,10 +65,10 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 |---------------|-------------------|-------|
 | `MainApplication` | `de.developerleipzig.smarttublex.SmartTublexApplication` | Manifest `android:name` |
 | `SplashActivity` | `de.developerleipzig.smarttublex.SmartTublexSplashActivity` | Launcher activity |
-| `BrowsePresenter` (maps) | `PlexBrowseInstaller` | Reflection into `mSectionsMapping` + `enableSection(TYPE_PLEX)` |
-| `SignInPresenter` | `PlexSignInPresenter` | Subclass + `sInstance` inject for PIN UI |
-| — | `PlexBrowsePresenter` | Library rows + library grid / children observe for ChannelUploads |
-| `ChannelUploadsPresenter` | `PlexChannelUploadsPresenter` | Subclass + `sInstance` inject for Movies/TV grid drill-down |
+| `BrowsePresenter` (maps) | `PlexBrowseInstaller` / `ImmichBrowseInstaller` | Reflection into `mSectionsMapping` + `mRowMapping` + `enableSection` |
+| `SignInPresenter` | `PlexSignInPresenter` / `ImmichSignInPresenter` | Subclass + `sInstance` inject (PIN / URL+API key) |
+| — | `PlexBrowsePresenter` / `ImmichBrowsePresenter` | Library rows + grid observe for ChannelUploads |
+| `ChannelUploadsPresenter` | `PlexChannelUploadsPresenter` | Subclass + `sInstance` inject for Plex + Immich grid drill-down |
 | — | `PlexServerSelectionPresenter` | AppDialog server list after PIN |
 | — | `MediaSourceRegistry` | Source switch / Plex + Immich manager access |
 | — | `PlexPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed |

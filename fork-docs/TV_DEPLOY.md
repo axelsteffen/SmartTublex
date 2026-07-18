@@ -28,6 +28,10 @@ The script runs: `assembleDebug` → `adb install -r` → start `SmartTublexSpla
 
 ## Build (manual)
 
+Requires **apktool** on the machine (`brew install apktool`). `packageWrapperApk`
+resolves `/opt/homebrew/bin/apktool` (or `APKTOOL=…`) even when the Gradle daemon
+PATH omits Homebrew.
+
 The Gradle daemon is pinned to JDK 21 (`gradle/gradle-daemon-jvm.properties`). A shell default of Java 25 is OK.
 
 ```bash
