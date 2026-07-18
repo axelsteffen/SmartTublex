@@ -8,8 +8,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter
 import de.developerleipzig.smarttublex.SmartTublexApplication
 
 /**
- * Phase 3d: swap upstream [VideoLoaderController] for [PlexAwareVideoLoaderController]
- * inside [PlaybackPresenter]'s listener list (no upstream bytecode patch).
+ * Phase 3d / 3f: swap upstream [VideoLoaderController] for [PlexAwareVideoLoaderController]
+ * (Plex + Immich seed) inside [PlaybackPresenter]'s listener list (no upstream bytecode patch).
  */
 object PlexPlaybackInstaller {
     @Volatile

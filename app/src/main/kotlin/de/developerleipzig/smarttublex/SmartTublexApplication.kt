@@ -9,6 +9,8 @@ import de.developerleipzig.immichapi.ImmichServiceManager
 import com.liskovsoft.smartyoutubetv2.tv.ui.main.MainApplication
 import de.developerleipzig.smarttublex.browse.ImmichBrowseInstaller
 import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
+import de.developerleipzig.smarttublex.misc.ImmichAuthHeaderInstaller
+import de.developerleipzig.smarttublex.misc.ImmichSettingsInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
 import de.developerleipzig.smarttublex.misc.PlexPlaybackInstaller
 import de.developerleipzig.smarttublex.misc.PlexSettingsInstaller
@@ -38,6 +40,9 @@ class SmartTublexApplication : MainApplication() {
                 "sidebarType=${SidebarSectionRegistry.TYPE_IMMICH} " +
                 "immichManager=${immich.javaClass.name}"
         )
+        if (SidebarSectionRegistry.isImmichReady(this)) {
+            ImmichAuthHeaderInstaller.ensureReady(this)
+        }
         super.onCreate()
         PlexPlaybackInstaller.ensureInstalled(this)
         PlexChannelUploadsPresenter.ensureInstalled(this)
@@ -52,6 +57,7 @@ class SmartTublexApplication : MainApplication() {
                 PlexBrowseInstaller.ensureInstalled(activity)
                 ImmichBrowseInstaller.ensureInstalled(activity)
                 PlexSettingsInstaller.ensureInstalled(activity)
+                ImmichSettingsInstaller.ensureInstalled(activity)
             }
             // Re-try playback / uploads hooks if Application.onCreate ran before presenters were ready
             if (name.endsWith(".BrowseActivity") || name.endsWith(".PlaybackActivity")

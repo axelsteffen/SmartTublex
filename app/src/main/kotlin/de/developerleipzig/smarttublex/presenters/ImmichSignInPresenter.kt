@@ -12,6 +12,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import de.developerleipzig.smarttublex.browse.ImmichBrowseInstaller
+import de.developerleipzig.smarttublex.misc.ImmichAuthHeaderInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
 import io.reactivex.disposables.Disposable
@@ -92,6 +93,7 @@ class ImmichSignInPresenter private constructor(context: Context) : BasePresente
                     val name = user?.name ?: user?.email ?: "Immich"
                     Log.i(SmartTublexApplication.TAG, "Immich validated as $name")
                     MessageHelpers.showMessage(ctx, "Connected as $name")
+                    ImmichAuthHeaderInstaller.ensureReady(ctx)
                     ImmichBrowseInstaller.refresh(ctx)
                     try {
                         val browse = BrowsePresenter.instance(ctx)
