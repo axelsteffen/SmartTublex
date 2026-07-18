@@ -1,194 +1,120 @@
 #!/usr/bin/env python3
-"""Generate SmartTublex branded master + mipmap-sized PNGs from images/logo/smarttublex.png."""
+"""Generate SmartTublex sized PNGs from the full-logo masters (no text overlay).
+
+Sources are already complete brand marks (icon + wordmark + tagline):
+  - smarttublex.png       → release
+  - smarttublex_beta.png  → beta
+
+Usage:
+  generate_branding.py                # beta → generated/ (default)
+  generate_branding.py --variant both
+  generate_branding.py --variant release
+"""
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "smarttublex.png"
-OUT_MASTER = ROOT / "smarttublex_branded.png"
-OUT_DIR = ROOT / "generated"
+SRC_RELEASE = ROOT / "smarttublex.png"
+SRC_BETA = ROOT / "smarttublex_beta.png"
+OUT_BETA = ROOT / "generated"
+OUT_RELEASE = ROOT / "generated_release"
+BLACK = (0, 0, 0)
+# Ignore near-black pixels when detecting the mark's content bounds
+CONTENT_LUMA_THRESHOLD = 12
+# Keep a thin margin around auto-trimmed content
+TRIM_MARGIN_RATIO = 0.02
 
-PRIMARY = "Beta Version"
-DISCLAIMER = "unofficial SmartTube fork"
-WHITE = (255, 255, 255, 255)
-BLACK = (0, 0, 0, 255)
-
-FONT_CANDIDATES = [
-    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-    "/System/Library/Fonts/Supplemental/Arial.ttf",
-    "/Library/Fonts/Arial Unicode.ttf",
-    "/System/Library/Fonts/Helvetica.ttc",
-]
-
-
-def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    preferred = FONT_CANDIDATES if not bold else [
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-        *FONT_CANDIDATES,
-    ]
-    for path in preferred:
-        p = Path(path)
-        if p.is_file():
-            try:
-                return ImageFont.truetype(str(p), size=size)
-            except OSError:
-                continue
-    return ImageFont.load_default()
+# nodpi / launcher sizes expected by packageWrapperApk
+SQUARE_ASSETS = {
+    "app_icon.png": 320,
+    "app_icon_alt.png": 320,
+    "app_logo.png": 180,
+    "app_logo_semi_red.png": 180,
+    "app_logo_semi_grey.png": 180,
+}
+LAUNCHER_DENSITIES = {
+    "mdpi": 48,
+    "hdpi": 72,
+    "xhdpi": 96,
+    "xxhdpi": 144,
+}
+BANNER_SIZE = (640, 360)
 
 
-def fit_font(draw: ImageDraw.ImageDraw, text: str, max_width: int, start: int, bold: bool = False) -> ImageFont.ImageFont:
-    size = start
-    while size >= 8:
-        font = load_font(size, bold=bold)
-        bbox = draw.textbbox((0, 0), text, font=font)
-        if bbox[2] - bbox[0] <= max_width:
-            return font
-        size -= 1
-    return load_font(8, bold=bold)
+def trim_content(src: Image.Image) -> Image.Image:
+    """Crop near-black padding so the mark fills more of the target frame."""
+    img = src.convert("RGB")
+    mask = img.convert("L").point(lambda p: 255 if p > CONTENT_LUMA_THRESHOLD else 0)
+    bbox = mask.getbbox()
+    if bbox is None:
+        return img
+    left, top, right, bottom = bbox
+    mw = max(1, int(round((right - left) * TRIM_MARGIN_RATIO)))
+    mh = max(1, int(round((bottom - top) * TRIM_MARGIN_RATIO)))
+    left = max(0, left - mw)
+    top = max(0, top - mh)
+    right = min(img.width, right + mw)
+    bottom = min(img.height, bottom + mh)
+    return img.crop((left, top, right, bottom))
 
 
-def paste_symbol(canvas: Image.Image, symbol: Image.Image, max_side: int, top: int) -> int:
-    """Paste symbol centered; return y just below symbol."""
-    s = symbol.copy()
-    s.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
-    x = (canvas.width - s.width) // 2
-    canvas.paste(s, (x, top), s if s.mode == "RGBA" else None)
-    return top + s.height
+def fit_contain(src: Image.Image, box: tuple[int, int], fill: tuple[int, int, int] = BLACK) -> Image.Image:
+    """Scale src to fit inside box, centered on a solid fill (letterbox / pillarbox)."""
+    canvas = Image.new("RGB", box, fill)
+    img = src.convert("RGB")
+    fitted = img.copy()
+    fitted.thumbnail(box, Image.Resampling.LANCZOS)
+    x = (box[0] - fitted.width) // 2
+    y = (box[1] - fitted.height) // 2
+    canvas.paste(fitted, (x, y))
+    return canvas
 
 
-def draw_centered(draw: ImageDraw.ImageDraw, text: str, y: int, font: ImageFont.ImageFont, width: int) -> int:
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    x = (width - tw) // 2
-    draw.text((x, y - bbox[1]), text, font=font, fill=WHITE)
-    return y + th
+def write_variant(src_path: Path, out_dir: Path) -> None:
+    if not src_path.is_file():
+        raise SystemExit(f"Missing source logo: {src_path}")
+    logo = trim_content(Image.open(src_path))
+    out_dir.mkdir(parents=True, exist_ok=True)
 
+    master = fit_contain(logo, (1254, 1600))
+    master_path = ROOT / (
+        "smarttublex_branded.png" if out_dir == OUT_BETA else "smarttublex_branded_release.png"
+    )
+    master.save(master_path, "PNG")
+    print(f"Wrote {master_path}")
 
-def make_branded_master(symbol: Image.Image) -> Image.Image:
-    w = 1254
-    h = 1600
-    canvas = Image.new("RGBA", (w, h), BLACK)
-    draw = ImageDraw.Draw(canvas)
-    bottom = paste_symbol(canvas, symbol.convert("RGBA"), max_side=1000, top=80)
-    y = bottom + 48
-    font_primary = fit_font(draw, PRIMARY, w - 80, start=72, bold=True)
-    y = draw_centered(draw, PRIMARY, y, font_primary, w) + 16
-    font_disc = fit_font(draw, DISCLAIMER, w - 80, start=36, bold=False)
-    # Prefer single line; if too wide at min size, split
-    bbox = draw.textbbox((0, 0), DISCLAIMER, font=font_disc)
-    if bbox[2] - bbox[0] > w - 80:
-        for line in ("unofficial", "SmartTube fork"):
-            font_line = fit_font(draw, line, w - 80, start=34, bold=False)
-            y = draw_centered(draw, line, y, font_line, w) + 8
-    else:
-        draw_centered(draw, DISCLAIMER, y, font_disc, w)
-    return canvas.convert("RGB")
+    for name, side in SQUARE_ASSETS.items():
+        fit_contain(logo, (side, side)).save(out_dir / name, "PNG")
 
+    fit_contain(logo, BANNER_SIZE).save(out_dir / "app_banner.png", "PNG")
 
-def compose_square(
-    symbol: Image.Image,
-    size: int,
-    *,
-    primary: bool,
-    disclaimer: bool,
-) -> Image.Image:
-    canvas = Image.new("RGBA", (size, size), BLACK)
-    draw = ImageDraw.Draw(canvas)
-    margin = max(4, size // 40)
-    text_budget = 0
-    if primary:
-        text_budget += max(14, size // 9)
-    if disclaimer:
-        text_budget += max(10, size // 12)
-    symbol_max = size - 2 * margin - text_budget - (8 if primary else 0)
-    symbol_max = max(symbol_max, size // 2)
-    bottom = paste_symbol(canvas, symbol.convert("RGBA"), max_side=symbol_max, top=margin)
-    y = bottom + max(4, size // 40)
-    if primary:
-        font_p = fit_font(draw, PRIMARY, size - 2 * margin, start=max(10, size // 10), bold=True)
-        y = draw_centered(draw, PRIMARY, y, font_p, size) + max(2, size // 80)
-    if disclaimer:
-        font_d = fit_font(draw, DISCLAIMER, size - 2 * margin, start=max(8, size // 16), bold=False)
-        bbox = draw.textbbox((0, 0), DISCLAIMER, font=font_d)
-        if bbox[2] - bbox[0] <= size - 2 * margin:
-            draw_centered(draw, DISCLAIMER, y, font_d, size)
-        else:
-            for line in ("unofficial", "SmartTube fork"):
-                font_line = fit_font(draw, line, size - 2 * margin, start=max(7, size // 18), bold=False)
-                y = draw_centered(draw, line, y, font_line, size) + 2
-    return canvas.convert("RGB")
+    for density, side in LAUNCHER_DENSITIES.items():
+        dest = out_dir / f"ic_launcher_{density}.png"
+        fit_contain(logo, (side, side)).save(dest, "PNG")
+        print(f"Wrote {dest}")
 
-
-def compose_banner(symbol: Image.Image, width: int = 640, height: int = 360) -> Image.Image:
-    canvas = Image.new("RGBA", (width, height), BLACK)
-    draw = ImageDraw.Draw(canvas)
-    # Symbol on the left, text on the right
-    sym = symbol.convert("RGBA")
-    sym.thumbnail((280, 280), Image.Resampling.LANCZOS)
-    sx = 40
-    sy = (height - sym.height) // 2
-    canvas.paste(sym, (sx, sy), sym)
-    text_left = sx + sym.width + 28
-    text_width = width - text_left - 24
-    font_p = fit_font(draw, PRIMARY, text_width, start=42, bold=True)
-    font_d = fit_font(draw, DISCLAIMER, text_width, start=22, bold=False)
-    bp = draw.textbbox((0, 0), PRIMARY, font=font_p)
-    bd = draw.textbbox((0, 0), DISCLAIMER, font=font_d)
-    ph = bp[3] - bp[1]
-    dh = bd[3] - bd[1]
-    gap = 12
-    block_h = ph + gap + dh
-    y = (height - block_h) // 2
-    draw.text((text_left, y - bp[1]), PRIMARY, font=font_p, fill=WHITE)
-    y2 = y + ph + gap
-    # split disclaimer if needed
-    if bd[2] - bd[0] > text_width:
-        y_line = y2
-        for line in ("unofficial", "SmartTube fork"):
-            fl = fit_font(draw, line, text_width, start=20, bold=False)
-            bl = draw.textbbox((0, 0), line, font=fl)
-            draw.text((text_left, y_line - bl[1]), line, font=fl, fill=WHITE)
-            y_line += (bl[3] - bl[1]) + 4
-    else:
-        draw.text((text_left, y2 - bd[1]), DISCLAIMER, font=font_d, fill=WHITE)
-    return canvas.convert("RGB")
+    print(f"Wrote assets under {out_dir}")
 
 
 def main() -> None:
-    if not SRC.is_file():
-        raise SystemExit(f"Missing source logo: {SRC}")
-    symbol = Image.open(SRC)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--variant",
+        choices=("beta", "release", "both"),
+        default="beta",
+        help="Which source logo to size (default: beta → generated/)",
+    )
+    args = parser.parse_args()
 
-    master = make_branded_master(symbol)
-    master.save(OUT_MASTER, "PNG")
-    print(f"Wrote {OUT_MASTER}")
-
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    icon = compose_square(symbol, 320, primary=True, disclaimer=True)
-    icon.save(OUT_DIR / "app_icon.png", "PNG")
-    icon.save(OUT_DIR / "app_icon_alt.png", "PNG")
-
-    compose_banner(symbol).save(OUT_DIR / "app_banner.png", "PNG")
-
-    logo = compose_square(symbol, 180, primary=True, disclaimer=False)
-    for name in ("app_logo.png", "app_logo_semi_red.png", "app_logo_semi_grey.png"):
-        logo.save(OUT_DIR / name, "PNG")
-
-    # Density launchers: symbol + Beta Version when size allows
-    for density, side in (("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144)):
-        use_primary = side >= 96
-        img = compose_square(symbol, side, primary=use_primary, disclaimer=False)
-        dest = OUT_DIR / f"ic_launcher_{density}.png"
-        img.save(dest, "PNG")
-        print(f"Wrote {dest}")
-
-    print(f"Wrote assets under {OUT_DIR}")
+    if args.variant in ("beta", "both"):
+        write_variant(SRC_BETA, OUT_BETA)
+    if args.variant in ("release", "both"):
+        write_variant(SRC_RELEASE, OUT_RELEASE)
 
 
 if __name__ == "__main__":
