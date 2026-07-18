@@ -78,12 +78,12 @@ SmartTublex/
 | Step | Description | Status |
 |------|-------------|--------|
 | 3a | `MediaSourceRegistry.Source.IMMICH` + `getImmichServiceManager()` | done |
-| 3b | `SidebarSectionRegistry.TYPE_IMMICH` (e.g. `101`) | open |
-| 3c | Sign-in UI (server URL + API key) — `ImmichSignInPresenter` | open |
-| 3d | Browse rows (albums / recent videos) — `ImmichBrowseInstaller` / Presenter | open |
+| 3b | `SidebarSectionRegistry.TYPE_IMMICH` (e.g. `101`) | done |
+| 3c | Sign-in UI (server URL + API key) — `ImmichSignInPresenter` | done |
+| 3d | Browse rows (albums / recent videos) — `ImmichBrowsePresenter` + row mapping | open |
 | 3e | Settings entry — `ImmichSettingsInstaller` / Presenter | open |
 | 3f | `ImmichPlaybackBridge` (video; ExoPlayer needs `x-api-key` request headers) | open |
-| 3g | Init in `SmartTublexApplication.onCreate()` | open |
+| 3g | Init in `SmartTublexApplication.onCreate()` | done |
 
 #### Wrapper touchpoints (mirror Plex)
 

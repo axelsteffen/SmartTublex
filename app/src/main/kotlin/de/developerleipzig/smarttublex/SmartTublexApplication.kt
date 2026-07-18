@@ -5,7 +5,9 @@ import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import de.developerleipzig.plexapi.PlexServiceManager
+import de.developerleipzig.immichapi.ImmichServiceManager
 import com.liskovsoft.smartyoutubetv2.tv.ui.main.MainApplication
+import de.developerleipzig.smarttublex.browse.ImmichBrowseInstaller
 import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
 import de.developerleipzig.smarttublex.misc.PlexPlaybackInstaller
@@ -20,13 +22,21 @@ class SmartTublexApplication : MainApplication() {
     override fun onCreate() {
         Log.i(TAG, "SmartTublexApplication.onCreate — wrapper starting")
         PlexServiceManager.init(this)
+        ImmichServiceManager.init(this)
         MediaSourceRegistry.setActiveSource(MediaSourceRegistry.Source.YOUTUBE)
         val plex = MediaSourceRegistry.getPlexServiceManager()
+        val immich = MediaSourceRegistry.getImmichServiceManager()
         Log.i(
             TAG,
             "Plex enabled=${MediaSourceRegistry.isPlexEnabled()} " +
                 "sidebarType=${SidebarSectionRegistry.TYPE_PLEX} " +
                 "plexManager=${plex.javaClass.name}"
+        )
+        Log.i(
+            TAG,
+            "Immich enabled=${MediaSourceRegistry.isImmichEnabled()} " +
+                "sidebarType=${SidebarSectionRegistry.TYPE_IMMICH} " +
+                "immichManager=${immich.javaClass.name}"
         )
         super.onCreate()
         PlexPlaybackInstaller.ensureInstalled(this)
@@ -40,6 +50,7 @@ class SmartTublexApplication : MainApplication() {
             val name = activity.javaClass.name
             if (name.endsWith(".BrowseActivity")) {
                 PlexBrowseInstaller.ensureInstalled(activity)
+                ImmichBrowseInstaller.ensureInstalled(activity)
                 PlexSettingsInstaller.ensureInstalled(activity)
             }
             // Re-try playback / uploads hooks if Application.onCreate ran before presenters were ready
