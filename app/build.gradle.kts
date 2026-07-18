@@ -118,6 +118,7 @@ val packageWrapperApk by tasks.registering {
     description = "Patch upstream SmartTube APK with SmartTublex Application/Splash, branding, and sign debug APK"
     dependsOn(
         "compileDebugKotlin",
+        "compileDebugJavaWithJavac",
         "processDebugResources",
         ":plexapi:bundleLibRuntimeToJarDebug",
         ":plexserviceinterfaces:bundleLibRuntimeToJarDebug",
@@ -141,6 +142,10 @@ val packageWrapperApk by tasks.registering {
 
         val classesDir = layout.buildDirectory.dir("tmp/kotlin-classes/debug").get().asFile
         check(classesDir.isDirectory) { "Missing compiled classes: $classesDir" }
+        // Java sources (e.g. SidebarServiceBridge) land under javac/, not kotlin-classes/.
+        val javaClassesDir = layout.buildDirectory
+            .dir("intermediates/javac/debug/compileDebugJavaWithJavac/classes")
+            .get().asFile
 
         fun runtimeLibJar(projectName: String): java.io.File {
             val jar = project(projectName).layout.buildDirectory
@@ -158,6 +163,16 @@ val packageWrapperApk by tasks.registering {
         mergeDir.mkdirs()
         project.exec {
             commandLine("cp", "-R", "${classesDir.absolutePath}/.", mergeDir.absolutePath)
+        }
+        if (javaClassesDir.isDirectory) {
+            project.exec {
+                commandLine("cp", "-R", "${javaClassesDir.absolutePath}/.", mergeDir.absolutePath)
+            }
+        }
+        check(
+            mergeDir.resolve("de/developerleipzig/smarttublex/browse/SidebarServiceBridge.class").isFile
+        ) {
+            "Missing SidebarServiceBridge.class in merge — Java compile output not packed"
         }
         for (libJar in listOf(plexIfJar, plexApiJar, immichIfJar, immichApiJar)) {
             project.exec {
