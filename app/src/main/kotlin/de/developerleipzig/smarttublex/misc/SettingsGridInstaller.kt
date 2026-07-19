@@ -78,12 +78,12 @@ object SettingsGridInstaller {
         }
 
         if (MediaSourceRegistry.isPlexEnabled()
-            && items.none { it.title == SidebarSectionRegistry.TITLE_PLEX }
+            && items.none { it.title == SidebarSectionRegistry.TITLE_SETTINGS_PLEX }
         ) {
             items.add(
                 insertAt,
                 SettingsItem(
-                    SidebarSectionRegistry.TITLE_PLEX,
+                    SidebarSectionRegistry.TITLE_SETTINGS_PLEX,
                     { PlexSettingsPresenter.instance(ctx).show() },
                     R.drawable.icon_playlist
                 )
@@ -92,12 +92,12 @@ object SettingsGridInstaller {
         }
 
         if (MediaSourceRegistry.isImmichEnabled()
-            && items.none { it.title == SidebarSectionRegistry.TITLE_IMMICH }
+            && items.none { it.title == SidebarSectionRegistry.TITLE_SETTINGS_IMMICH }
         ) {
             items.add(
                 insertAt,
                 SettingsItem(
-                    SidebarSectionRegistry.TITLE_IMMICH,
+                    SidebarSectionRegistry.TITLE_SETTINGS_IMMICH,
                     { ImmichSettingsPresenter.instance(ctx).show() },
                     R.drawable.icon_playlist
                 )

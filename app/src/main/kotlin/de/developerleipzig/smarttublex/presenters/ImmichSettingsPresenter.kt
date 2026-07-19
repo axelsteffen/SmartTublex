@@ -75,7 +75,7 @@ class ImmichSettingsPresenter private constructor(context: Context) : BasePresen
             )
         }
 
-        var title = SidebarSectionRegistry.TITLE_IMMICH
+        var title = SidebarSectionRegistry.TITLE_SETTINGS_IMMICH
         if (signInService.isSigned) {
             val host = hostLabel(signInService.serverUrl)
             if (!host.isNullOrEmpty()) {

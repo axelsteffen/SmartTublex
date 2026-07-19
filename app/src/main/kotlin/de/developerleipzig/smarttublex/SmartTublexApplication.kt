@@ -7,8 +7,7 @@ import android.util.Log
 import de.developerleipzig.plexapi.PlexServiceManager
 import de.developerleipzig.immichapi.ImmichServiceManager
 import com.liskovsoft.smartyoutubetv2.tv.ui.main.MainApplication
-import de.developerleipzig.smarttublex.browse.ImmichBrowseInstaller
-import de.developerleipzig.smarttublex.browse.PlexBrowseInstaller
+import de.developerleipzig.smarttublex.browse.ContentBrowseInstaller
 import de.developerleipzig.smarttublex.misc.ImmichAuthHeaderInstaller
 import de.developerleipzig.smarttublex.misc.ImmichSettingsInstaller
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
@@ -31,13 +30,13 @@ class SmartTublexApplication : MainApplication() {
         Log.i(
             TAG,
             "Plex enabled=${MediaSourceRegistry.isPlexEnabled()} " +
-                "sidebarType=${SidebarSectionRegistry.TYPE_PLEX} " +
+                "sidebarMovies=${SidebarSectionRegistry.TYPE_MOVIES} " +
                 "plexManager=${plex.javaClass.name}"
         )
         Log.i(
             TAG,
             "Immich enabled=${MediaSourceRegistry.isImmichEnabled()} " +
-                "sidebarType=${SidebarSectionRegistry.TYPE_IMMICH} " +
+                "sidebarPhotos=${SidebarSectionRegistry.TYPE_PHOTOS} " +
                 "immichManager=${immich.javaClass.name}"
         )
         if (SidebarSectionRegistry.isImmichReady(this)) {
@@ -54,8 +53,7 @@ class SmartTublexApplication : MainApplication() {
         override fun onActivityResumed(activity: Activity) {
             val name = activity.javaClass.name
             if (name.endsWith(".BrowseActivity")) {
-                PlexBrowseInstaller.ensureInstalled(activity)
-                ImmichBrowseInstaller.ensureInstalled(activity)
+                ContentBrowseInstaller.ensureInstalled(activity)
                 PlexSettingsInstaller.ensureInstalled(activity)
                 ImmichSettingsInstaller.ensureInstalled(activity)
             }

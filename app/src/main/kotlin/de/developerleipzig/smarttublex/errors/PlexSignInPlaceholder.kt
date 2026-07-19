@@ -121,7 +121,7 @@ class PlexSignInPlaceholder(
         PlexBrowseInstaller.refresh(appContext)
         try {
             val browse = BrowsePresenter.instance(appContext)
-            browse.selectSection(SidebarSectionRegistry.TYPE_PLEX)
+            browse.selectSection(SidebarSectionRegistry.TYPE_MOVIES)
             browse.refresh()
         } catch (t: Throwable) {
             Log.e(SmartTublexApplication.TAG, "PlexSignInPlaceholder: retry failed", t)

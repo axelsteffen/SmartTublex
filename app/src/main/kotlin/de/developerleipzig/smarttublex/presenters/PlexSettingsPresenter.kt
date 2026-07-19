@@ -74,7 +74,7 @@ class PlexSettingsPresenter private constructor(context: Context) : BasePresente
             )
         }
 
-        var title = SidebarSectionRegistry.TITLE_PLEX
+        var title = SidebarSectionRegistry.TITLE_SETTINGS_PLEX
         if (signInService.isSigned && selected != null && !selected.name.isNullOrEmpty()) {
             title = "Server: ${selected.name}"
         }

@@ -7,7 +7,6 @@ import de.developerleipzig.immichapi.adapter.ImmichMediaItemAdapter
 import de.developerleipzig.immichapi.library.ImmichAlbumImpl
 import de.developerleipzig.immichapi.library.ImmichPage
 import de.developerleipzig.immichserviceinterfaces.ImmichLibraryService
-import de.developerleipzig.immichserviceinterfaces.data.ImmichAlbum
 import de.developerleipzig.immichserviceinterfaces.data.ImmichAssetPage
 import com.liskovsoft.sharedutils.rx.RxHelper
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
@@ -17,13 +16,9 @@ import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 
 /**
- * Phase 3d: Immich browse rows (recent videos + albums) for upstream [BrowsePresenter].
- *
- * Progressive emission keeps first paint light on TV; album grids open via ChannelUploads.
+ * Immich Fotos (year rows) and Alben (album cards) browse sections.
  */
 object ImmichBrowsePresenter {
-    private const val ROW_RECENT_VIDEOS = "Recent Videos"
-
     fun isImmichGroup(group: MediaGroup?): Boolean = group is ImmichMediaGroupAdapter
 
     fun isImmichVideo(video: Video?): Boolean {
@@ -31,73 +26,61 @@ object ImmichBrowsePresenter {
         return video.mediaItem is ImmichMediaItemAdapter
     }
 
-    /**
-     * Cold observable: emits Immich shelves progressively (TV-friendly).
-     */
-    fun getLibraryRowsObserve(): Observable<List<MediaGroup>> {
+    fun getPhotosRowsObserve(): Observable<List<MediaGroup>> {
         return RxHelper.createLong { emitter ->
             try {
                 val libraryService = MediaSourceRegistry.getImmichServiceManager().libraryService
                 var emitted = 0
                 var softFail: Throwable? = null
 
-                emitIfPresent(emitter, buildRecentVideos(libraryService)).also {
-                    emitted += it.emitted
-                    softFail = softFail ?: it.error
-                }
-
-                val albums = try {
-                    libraryService.albumsObserve.blockingFirst()
+                val years = try {
+                    libraryService.photoYearsObserve.blockingFirst()
                 } catch (e: Throwable) {
-                    Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: albums failed", e)
-                    softFail = softFail ?: e
+                    Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: years failed", e)
+                    softFail = e
                     emptyList()
                 }
 
-                if (albums.isNullOrEmpty()) {
-                    Log.i(SmartTublexApplication.TAG, "ImmichBrowsePresenter: no albums")
+                if (years.isNullOrEmpty()) {
+                    Log.i(SmartTublexApplication.TAG, "ImmichBrowsePresenter: no photo years")
                 } else {
-                    for (album in albums) {
+                    for (year in years) {
                         if (emitter.isDisposed) break
-                        emitIfPresent(emitter, buildAlbumRow(libraryService, album)).also {
+                        emitIfPresent(emitter, buildYearRow(libraryService, year)).also {
                             emitted += it.emitted
                             softFail = softFail ?: it.error
                         }
                     }
                 }
 
-                if (emitted == 0 && softFail != null) {
-                    if (!emitter.isDisposed) {
-                        emitter.onError(softFail)
-                    }
-                    return@createLong
-                }
-
-                if (emitted == 0 && !emitter.isDisposed) {
-                    emitter.onNext(emptyList())
-                }
-                if (!emitter.isDisposed) {
-                    Log.i(
-                        SmartTublexApplication.TAG,
-                        "ImmichBrowsePresenter: finished rows emitted=$emitted"
-                    )
-                    emitter.onComplete()
-                }
+                finishEmit(emitter, emitted, softFail)
             } catch (e: Throwable) {
-                if (!emitter.isDisposed) {
-                    emitter.onError(e)
-                }
+                if (!emitter.isDisposed) emitter.onError(e)
             }
         }
     }
 
-    /** Next page for an Immich row or album grid (scroll-end). */
+    fun getAlbumsRowsObserve(): Observable<List<MediaGroup>> {
+        return RxHelper.createLong { emitter ->
+            try {
+                val libraryService = MediaSourceRegistry.getImmichServiceManager().libraryService
+                val built = buildAlbumsList(libraryService)
+                val result = emitIfPresent(emitter, built)
+                finishEmit(emitter, result.emitted, result.error)
+            } catch (e: Throwable) {
+                if (!emitter.isDisposed) emitter.onError(e)
+            }
+        }
+    }
+
+    /** @deprecated Prefer [getPhotosRowsObserve] / [getAlbumsRowsObserve]. */
+    fun getLibraryRowsObserve(): Observable<List<MediaGroup>> = getAlbumsRowsObserve()
+
     fun continueGroupObserve(group: MediaGroup?): Observable<MediaGroup>? {
         if (group !is ImmichMediaGroupAdapter) return null
         return RxHelper.fromCallable { fetchContinueGroup(group) }
     }
 
-    /** Full paginated album grid from a browse stub ([Video.reloadPageKey]). */
     fun getAlbumGridObserve(video: Video?): Observable<MediaGroup>? {
         if (video == null || !isImmichVideo(video) || !video.hasReloadPageKey()) {
             return null
@@ -108,6 +91,24 @@ object ImmichBrowsePresenter {
     private data class EmitResult(val emitted: Int, val error: Throwable? = null)
 
     private data class BuiltGroup(val group: MediaGroup?, val error: Throwable? = null)
+
+    private fun finishEmit(
+        emitter: ObservableEmitter<List<MediaGroup>>,
+        emitted: Int,
+        softFail: Throwable?
+    ) {
+        if (emitted == 0 && softFail != null) {
+            if (!emitter.isDisposed) emitter.onError(softFail)
+            return
+        }
+        if (emitted == 0 && !emitter.isDisposed) {
+            emitter.onNext(emptyList())
+        }
+        if (!emitter.isDisposed) {
+            Log.i(SmartTublexApplication.TAG, "ImmichBrowsePresenter: finished rows emitted=$emitted")
+            emitter.onComplete()
+        }
+    }
 
     private fun emitIfPresent(
         emitter: ObservableEmitter<List<MediaGroup>>,
@@ -120,29 +121,24 @@ object ImmichBrowsePresenter {
         return EmitResult(1, built.error)
     }
 
-    private fun buildRecentVideos(libraryService: ImmichLibraryService): BuiltGroup {
+    private fun buildYearRow(libraryService: ImmichLibraryService, year: Int): BuiltGroup {
         return try {
-            val page = toImmichPage(libraryService.getRecentVideosPageObserve(0).blockingFirst())
+            val page = toImmichPage(libraryService.getAssetsForYearPageObserve(year, 0).blockingFirst())
             if (page == null || page.items.isEmpty()) return BuiltGroup(null)
-            BuiltGroup(ImmichMediaGroupAdapter.fromRecentVideos(ROW_RECENT_VIDEOS, page.items, page))
+            BuiltGroup(ImmichMediaGroupAdapter.fromYear(year, page.items, page))
         } catch (e: Throwable) {
-            Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: recent videos failed", e)
+            Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: year $year failed", e)
             BuiltGroup(null, e)
         }
     }
 
-    private fun buildAlbumRow(libraryService: ImmichLibraryService, album: ImmichAlbum): BuiltGroup {
+    private fun buildAlbumsList(libraryService: ImmichLibraryService): BuiltGroup {
         return try {
-            val page = toImmichPage(
-                libraryService.getAlbumAssetsPageObserve(album, 0).blockingFirst()
-            )
-            BuiltGroup(ImmichMediaGroupAdapter.fromAlbum(album, page?.items, page))
+            val albums = libraryService.albumsObserve.blockingFirst()
+            if (albums.isNullOrEmpty()) return BuiltGroup(null)
+            BuiltGroup(ImmichMediaGroupAdapter.fromAlbumsList(albums))
         } catch (e: Throwable) {
-            Log.e(
-                SmartTublexApplication.TAG,
-                "ImmichBrowsePresenter: album row ${album.title} failed",
-                e
-            )
+            Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: albums failed", e)
             BuiltGroup(null, e)
         }
     }
@@ -175,10 +171,16 @@ object ImmichBrowsePresenter {
             ImmichMediaGroupAdapter.Kind.ALBUM_ROW,
             ImmichMediaGroupAdapter.Kind.ALBUM_GRID -> {
                 val album = group.immichAlbum ?: return null
+                toImmichPage(libraryService.getAlbumAssetsPageObserve(album, offset).blockingFirst())
+            }
+            ImmichMediaGroupAdapter.Kind.YEAR_ROW,
+            ImmichMediaGroupAdapter.Kind.YEAR_GRID -> {
+                if (group.year <= 0) return null
                 toImmichPage(
-                    libraryService.getAlbumAssetsPageObserve(album, offset).blockingFirst()
+                    libraryService.getAssetsForYearPageObserve(group.year, offset).blockingFirst()
                 )
             }
+            ImmichMediaGroupAdapter.Kind.ALBUMS_LIST -> null
         }
 
         if (page == null || page.items.isEmpty()) return null

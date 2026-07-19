@@ -120,7 +120,7 @@ class ImmichSignInPresenter private constructor(context: Context) : BasePresente
                     ImmichBrowseInstaller.refresh(ctx)
                     try {
                         val browse = BrowsePresenter.instance(ctx)
-                        browse.selectSection(SidebarSectionRegistry.TYPE_IMMICH)
+                        browse.selectSection(SidebarSectionRegistry.TYPE_PHOTOS)
                         browse.refresh()
                     } catch (t: Throwable) {
                         Log.w(SmartTublexApplication.TAG, "ImmichSignInPresenter: browse refresh failed", t)

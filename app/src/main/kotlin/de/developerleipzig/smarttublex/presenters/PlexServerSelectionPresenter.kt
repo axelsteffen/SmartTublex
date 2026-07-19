@@ -90,7 +90,7 @@ class PlexServerSelectionPresenter private constructor(context: Context) :
         val ctx = context ?: return
         PlexBrowseInstaller.refresh(ctx)
         val browsePresenter = BrowsePresenter.instance(ctx)
-        browsePresenter.selectSection(SidebarSectionRegistry.TYPE_PLEX)
+        browsePresenter.selectSection(SidebarSectionRegistry.TYPE_MOVIES)
         MessageHelpers.showMessage(ctx, "Plex server selected")
     }
 
