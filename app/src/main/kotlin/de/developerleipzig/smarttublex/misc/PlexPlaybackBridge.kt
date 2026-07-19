@@ -33,7 +33,11 @@ object PlexPlaybackBridge {
     fun isPlexVideo(video: Video?): Boolean {
         if (video == null) return false
         if (video.mediaItem is PlexMediaItemAdapter) return true
-        return false
+        // Adapter may be dropped after metadata sync; ratingKey + active source still identify Plex.
+        val ratingKey = video.videoId
+        return !ratingKey.isNullOrEmpty()
+            && isLikelyPlexRatingKey(ratingKey)
+            && MediaSourceRegistry.getActiveSource() == MediaSourceRegistry.Source.PLEX
     }
 
     fun resolveFormatInfo(item: PlexMediaItem): Observable<MediaItemFormatInfo> {
@@ -161,14 +165,15 @@ object PlexPlaybackBridge {
             return null
         }
         // Queue / restore paths may drop the adapter; stub is enough for stream lookup by ratingKey.
+        // Type unknown until metadata refresh — do not assume "movie" (breaks episode next).
         if (!isLikelyPlexRatingKey(ratingKey)) {
             return null
         }
         return PlexMediaItemImpl(
             ratingKey,
-            null,
+            "/library/metadata/$ratingKey",
             video.title,
-            "movie",
+            null,
             if (video.getDurationMs() > 0) video.getDurationMs() else 0L,
             video.cardImageUrl,
             0

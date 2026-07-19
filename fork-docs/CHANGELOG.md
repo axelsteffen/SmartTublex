@@ -56,6 +56,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `ImmichBrowsePresenter`: `getPhotosRowsObserve` (year rows) / `getAlbumsRowsObserve` (album cards)
 - Series autoplay: `PlexNextEpisodeResolver` seeds `Video.nextMediaItem` from season group or PMS children (incl. next season)
 - Fix series autoplay from Continue Watching: only use group siblings for season containers; `loadNext` prefers `nextMediaItem` over shelf neighbors
+- Fix series autoplay: sync next-episode resolve; `loadNext` never falls back to CW/Playlist neighbors for episodes; `getItemObserve` metadata refresh
 - Immich Phase 3a: `MediaSourceRegistry.Source.IMMICH`, `isImmichEnabled()`, `getImmichServiceManager()`
 - Immich Phase 3b/3c: `SidebarSectionRegistry` Immich sections (now Fotos/Alben), `ImmichBrowseInstaller` → `ContentBrowseInstaller`, `ImmichSignInPresenter`
 - Immich Phase 3d: `ImmichBrowsePresenter` rows / continue / album grid; `PlexChannelUploadsPresenter` opens Immich album grids
@@ -83,6 +84,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Discover watchlist: `MediaContainer.librarySectionID` as `String` (fixes Gson `NumberFormatException` on `"watchlist"`)
 - `PlexMediaItem`: `parentRatingKey` / `grandparentRatingKey` / `index` for next-episode resolve
 - `PlexMediaItem`: `grandparentTitle` / `parentTitle` / `parentIndex`; episode/season cards show show name + `SxxExx` subtitle
+- `PlexLibraryService.getItemObserve(ratingKey)` for metadata refresh (next-episode parent keys)
 - `PlexMediaGroupAdapter.fromBrowseCard` + `fromLibraryBrowse(..., displayTitle)` for „Alle Filme/TV-Shows“
 
 ### Wrapper Touch Points

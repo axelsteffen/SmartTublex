@@ -19,7 +19,7 @@ class PlexAwareVideoLoaderController : VideoLoaderController() {
                 )
                 // Must finish before super: loadFormatInfo reads the YT format cache next.
                 PlexPlaybackBridge.seedFormatCacheIfPlex(item)
-                // WRAPPER: seed next episode for SmartTube onPlayEnd → loadNext → getNext()
+                // WRAPPER: sync seed next episode so onPlayEnd → loadNext sees nextMediaItem
                 PlexNextEpisodeResolver.seedNextEpisode(item)
             }
             item != null && ImmichPlaybackBridge.isImmichVideo(item) -> {
@@ -37,23 +37,35 @@ class PlexAwareVideoLoaderController : VideoLoaderController() {
     }
 
     /**
-     * Prefer [Video.nextMediaItem] for Plex episodes so Continue Watching / section
-     * siblings do not win over the series next episode via SuggestionsController.
+     * For Plex episodes, only play the series next episode — never Continue Watching /
+     * Playlist / section siblings via [SuggestionsController.getNext].
      */
     override fun loadNext() {
         val video = getVideo()
-        val nextItem = video?.nextMediaItem
-        if (video != null
-            && nextItem != null
-            && PlexPlaybackBridge.isPlexVideo(video)
-            && PlexNextEpisodeResolver.isEpisode(video)
-        ) {
-            Log.i(
-                SmartTublexApplication.TAG,
-                "PlexAwareVideoLoaderController: loadNext via nextMediaItem → ${nextItem.videoId}"
-            )
-            onSuggestionItemClicked(Video.from(nextItem))
-            return
+        if (video != null && PlexPlaybackBridge.isPlexVideo(video)) {
+            val knownEpisode = PlexNextEpisodeResolver.isEpisode(video)
+            var nextItem = video.nextMediaItem
+            if (nextItem == null) {
+                nextItem = PlexNextEpisodeResolver.resolveBlocking(video)
+                if (nextItem != null) {
+                    video.nextMediaItem = nextItem
+                }
+            }
+            if (nextItem != null) {
+                Log.i(
+                    SmartTublexApplication.TAG,
+                    "PlexAwareVideoLoaderController: loadNext via series next → ${nextItem.videoId}"
+                )
+                onSuggestionItemClicked(Video.from(nextItem))
+                return
+            }
+            if (knownEpisode) {
+                Log.i(
+                    SmartTublexApplication.TAG,
+                    "PlexAwareVideoLoaderController: no series next — skip shelf neighbor"
+                )
+                return
+            }
         }
         super.loadNext()
     }

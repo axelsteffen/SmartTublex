@@ -1,6 +1,5 @@
 package de.developerleipzig.smarttublex.misc
 
-import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
@@ -11,20 +10,21 @@ import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Seeds [Video.nextMediaItem] for Plex episodes so upstream
- * [com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsController.getNext]
- * can autoplay the next episode.
+ * Seeds [Video.nextMediaItem] for Plex episodes so upstream autoplay can continue the series.
  *
  * Prefers the current [Video.group] only when it is a season/episode container;
  * falls back to PMS children API for Continue Watching and other shelves.
+ * Resolution is synchronous (IO + latch) so [nextMediaItem] is set before playback continues.
  */
 object PlexNextEpisodeResolver {
     private const val TYPE_EPISODE = "episode"
     private const val TYPE_SEASON = "season"
-
-    private val mainHandler = Handler(Looper.getMainLooper())
+    private const val RESOLVE_TIMEOUT_SEC = 10L
 
     fun isEpisode(video: Video?): Boolean {
         if (video == null || !PlexPlaybackBridge.isPlexVideo(video)) return false
@@ -34,41 +34,73 @@ object PlexNextEpisodeResolver {
 
     /**
      * Sets [Video.nextMediaItem] when the current item is a Plex episode.
-     * Group resolution is synchronous; API fallback runs on IO without blocking the caller.
+     * Blocks until resolved (or timeout) so end-of-play always sees a stable value.
      */
     fun seedNextEpisode(video: Video?) {
         if (video == null || !PlexPlaybackBridge.isPlexVideo(video)) return
-        val episode = PlexPlaybackBridge.resolvePlexItem(video) ?: return
-        if (!TYPE_EPISODE.equals(episode.type, ignoreCase = true)) return
+        val item = PlexPlaybackBridge.resolvePlexItem(video) ?: return
+        // Skip known non-episodes (movies); unknown type still tries resolve (refresh on IO).
+        if (item.type != null && !TYPE_EPISODE.equals(item.type, ignoreCase = true)) {
+            return
+        }
+        val next = resolveBlocking(video) ?: run {
+            Log.i(SmartTublexApplication.TAG, "PlexNextEpisodeResolver: no next episode")
+            return
+        }
+        video.nextMediaItem = next
+        Log.i(
+            SmartTublexApplication.TAG,
+            "PlexNextEpisodeResolver: seeded next → ${next.videoId}"
+        )
+    }
+
+    /**
+     * Group path (season grid) or PMS children API. Safe to call from the main thread:
+     * network work runs on [Schedulers.io] with a latch.
+     */
+    fun resolveBlocking(video: Video?): MediaItem? {
+        if (video == null || !PlexPlaybackBridge.isPlexVideo(video)) return null
 
         val fromGroup = resolveFromGroup(video)
         if (fromGroup != null) {
-            video.nextMediaItem = fromGroup
-            Log.i(
-                SmartTublexApplication.TAG,
-                "PlexNextEpisodeResolver: next from group → ${fromGroup.videoId}"
-            )
-            return
+            return fromGroup
         }
 
+        val seed = PlexPlaybackBridge.resolvePlexItem(video) ?: return null
+
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            return resolveFromApi(seed)
+        }
+
+        val result = AtomicReference<MediaItem?>(null)
+        val error = AtomicReference<Throwable?>(null)
+        val latch = CountDownLatch(1)
         Schedulers.io().scheduleDirect {
             try {
-                val next = resolveFromApi(episode)
-                if (next != null) {
-                    mainHandler.post {
-                        // Only set if nothing else filled it (e.g. user queue).
-                        if (video.nextMediaItem == null) {
-                            video.nextMediaItem = next
-                            Log.i(
-                                SmartTublexApplication.TAG,
-                                "PlexNextEpisodeResolver: next from API → ${next.videoId}"
-                            )
-                        }
-                    }
-                }
+                result.set(resolveFromApi(seed))
             } catch (t: Throwable) {
-                Log.w(SmartTublexApplication.TAG, "PlexNextEpisodeResolver: API resolve failed", t)
+                error.set(t)
+            } finally {
+                latch.countDown()
             }
+        }
+        return try {
+            if (!latch.await(RESOLVE_TIMEOUT_SEC, TimeUnit.SECONDS)) {
+                Log.w(
+                    SmartTublexApplication.TAG,
+                    "PlexNextEpisodeResolver: resolve timed out for ${seed.ratingKey}"
+                )
+                null
+            } else {
+                error.get()?.let {
+                    Log.w(SmartTublexApplication.TAG, "PlexNextEpisodeResolver: resolve failed", it)
+                }
+                result.get()
+            }
+        } catch (t: InterruptedException) {
+            Thread.currentThread().interrupt()
+            Log.w(SmartTublexApplication.TAG, "PlexNextEpisodeResolver: resolve interrupted", t)
+            null
         }
     }
 
@@ -96,19 +128,33 @@ object PlexNextEpisodeResolver {
     }
 
     internal fun resolveFromApi(episode: PlexMediaItem): MediaItem? {
+        var resolved = episode
+        if (!TYPE_EPISODE.equals(resolved.type, ignoreCase = true)
+            || resolved.parentRatingKey.isNullOrEmpty()
+            || resolved.grandparentRatingKey.isNullOrEmpty()
+        ) {
+            val refreshed = refreshItem(resolved.ratingKey)
+            if (refreshed != null) {
+                resolved = refreshed
+            }
+        }
+        if (!TYPE_EPISODE.equals(resolved.type, ignoreCase = true)) {
+            return null
+        }
+
         val library = MediaSourceRegistry.getPlexServiceManager().libraryService
 
-        val parentKey = episode.parentRatingKey
+        val parentKey = resolved.parentRatingKey
         if (!parentKey.isNullOrEmpty()) {
             val seasonStub = stubContainer(parentKey, TYPE_SEASON)
             val siblings = library.getChildrenObserve(seasonStub).blockingFirst()
-            val nextInSeason = nextAfter(siblings, episode.ratingKey, TYPE_EPISODE)
+            val nextInSeason = nextAfter(siblings, resolved.ratingKey, TYPE_EPISODE)
             if (nextInSeason != null) {
                 return PlexMediaItemAdapter.from(nextInSeason)
             }
         }
 
-        val showKey = episode.grandparentRatingKey
+        val showKey = resolved.grandparentRatingKey
         if (showKey.isNullOrEmpty() || parentKey.isNullOrEmpty()) {
             return null
         }
@@ -133,6 +179,23 @@ object PlexNextEpisodeResolver {
             return PlexMediaItemAdapter.from(first)
         }
         return null
+    }
+
+    private fun refreshItem(ratingKey: String?): PlexMediaItem? {
+        if (ratingKey.isNullOrEmpty()) return null
+        return try {
+            MediaSourceRegistry.getPlexServiceManager()
+                .libraryService
+                .getItemObserve(ratingKey)
+                .blockingFirst()
+        } catch (t: Throwable) {
+            Log.w(
+                SmartTublexApplication.TAG,
+                "PlexNextEpisodeResolver: metadata refresh failed for $ratingKey",
+                t
+            )
+            null
+        }
     }
 
     private fun nextAfter(
