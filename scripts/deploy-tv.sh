@@ -98,5 +98,5 @@ echo "OK — deployed to device."
 
 if [[ "$DO_LOG" -eq 1 ]]; then
   echo "==> adb logcat Immich/Exo (Ctrl-C to stop)"
-  exec adb logcat -s SmartTublex:D ExoPlayerImpl:E ExoPlayerImplInternal:E MediaCodecRenderer:E OkHttp:W
+  exec adb logcat -s SmartTublex:D AndroidRuntime:E ExoPlayerImpl:E ExoPlayerImplInternal:E MediaCodecRenderer:E OkHttp:W
 fi
