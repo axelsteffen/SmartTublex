@@ -81,14 +81,25 @@ object ContentBrowseInstaller {
 
     /**
      * Pins Filme → TV-Shows → Merkliste → Fotos → Alben immediately after Home.
+     * @return true only when the pin order actually changed (avoids Browse reload flicker).
      */
     private fun placeContentSectionsAfterHome(sidebar: Any): Boolean {
         return try {
             val items = SidebarServiceBridge.pinnedItems(sidebar)
             val homeIndex = items.indexOfFirst { it != null && it.sectionId == MediaGroup.TYPE_HOME }
+            val insertBase = if (homeIndex < 0) 0 else homeIndex + 1
+            val expectedIds = SidebarSectionRegistry.CONTENT_SECTION_IDS
+            val alreadyOrdered =
+                insertBase + expectedIds.size <= items.size &&
+                    expectedIds.indices.all { i ->
+                        items[insertBase + i]?.sectionId == expectedIds[i]
+                    }
+            if (alreadyOrdered) {
+                return false
+            }
 
             val contentItems = ArrayList<com.liskovsoft.smartyoutubetv2.common.app.models.data.Video>()
-            for (id in SidebarSectionRegistry.CONTENT_SECTION_IDS) {
+            for (id in expectedIds) {
                 val idx = items.indexOfFirst { it != null && it.sectionId == id }
                 if (idx >= 0) {
                     contentItems.add(items.removeAt(idx))
@@ -98,21 +109,16 @@ object ContentBrowseInstaller {
                 return false
             }
 
-            val insertBase = if (homeIndex < 0) {
-                0
-            } else {
-                items.indexOfFirst { it != null && it.sectionId == MediaGroup.TYPE_HOME }
-                    .let { if (it < 0) 0 else it + 1 }
-            }
-            // Reinsert content sections in fixed order after Home.
-            var insertAt = insertBase.coerceIn(0, items.size)
+            val homeIndexAfter = items.indexOfFirst { it != null && it.sectionId == MediaGroup.TYPE_HOME }
+            val insertAtBase = if (homeIndexAfter < 0) 0 else homeIndexAfter + 1
+            var insertAt = insertAtBase.coerceIn(0, items.size)
             for (item in contentItems) {
                 items.add(insertAt++, item)
             }
             SidebarServiceBridge.persistState(sidebar)
             Log.i(
                 SmartTublexApplication.TAG,
-                "ContentBrowseInstaller: placed content sections after Home (base=$insertBase)"
+                "ContentBrowseInstaller: placed content sections after Home (base=$insertAtBase)"
             )
             true
         } catch (t: Throwable) {
