@@ -15,6 +15,7 @@ import de.developerleipzig.smarttublex.misc.PlexPlaybackInstaller
 import de.developerleipzig.smarttublex.misc.PlexSettingsInstaller
 import de.developerleipzig.smarttublex.misc.SidebarSectionRegistry
 import de.developerleipzig.smarttublex.presenters.PlexChannelUploadsPresenter
+import java.lang.ref.WeakReference
 
 /**
  * Wrapper [MainApplication]. Override points for SmartTublex customization.
@@ -51,6 +52,7 @@ class SmartTublexApplication : MainApplication() {
 
     private object BrowseInstallCallbacks : Application.ActivityLifecycleCallbacks {
         override fun onActivityResumed(activity: Activity) {
+            resumedActivityRef = WeakReference(activity)
             val name = activity.javaClass.name
             if (name.endsWith(".BrowseActivity")) {
                 ContentBrowseInstaller.ensureInstalled(activity)
@@ -71,10 +73,20 @@ class SmartTublexApplication : MainApplication() {
         override fun onActivityPaused(activity: Activity) {}
         override fun onActivityStopped(activity: Activity) {}
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-        override fun onActivityDestroyed(activity: Activity) {}
+        override fun onActivityDestroyed(activity: Activity) {
+            if (resumedActivityRef?.get() === activity) {
+                resumedActivityRef = null
+            }
+        }
     }
 
     companion object {
         const val TAG = "SmartTublex"
+
+        @Volatile
+        private var resumedActivityRef: WeakReference<Activity>? = null
+
+        /** Current resumed activity. */
+        fun resumedActivity(): Activity? = resumedActivityRef?.get()
     }
 }

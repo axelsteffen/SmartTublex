@@ -19,6 +19,12 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
  */
 public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMediaItem {
     private static final String TYPE_ALBUM = "album";
+    /**
+     * Prefix for still {@link #getParams()}. Must be unique per asset: SmartTube
+     * {@code Video.hashCode()} uses {@code Helpers.hashCodeAny} (first non-null only), and
+     * {@code VideoGroup.add} drops equal items — a shared sentinel collapsed all stills to one.
+     */
+    private static final String PARAMS_STILL_PREFIX = "immich_still:";
 
     private final ImmichAsset mAsset;
     private final ImmichAlbum mAlbum;
@@ -62,6 +68,10 @@ public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMedi
 
     private boolean isAlbumBrowse() {
         return mAlbum != null && mAsset == null;
+    }
+
+    private boolean isStillImage() {
+        return mAsset != null && !mAsset.isVideo();
     }
 
     @Override
@@ -121,7 +131,15 @@ public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMedi
 
     @Override
     public String getParams() {
-        return isAlbumBrowse() ? TYPE_ALBUM : null;
+        if (isAlbumBrowse()) {
+            return TYPE_ALBUM;
+        }
+        // Stills omit videoId (click → ChannelUploads, not Playback). Non-null unique params
+        // keep Video.isEmpty() false and avoid VideoGroup duplicate collapse.
+        if (isStillImage() && mAsset != null && mAsset.getId() != null) {
+            return PARAMS_STILL_PREFIX + mAsset.getId();
+        }
+        return null;
     }
 
     @Override
@@ -156,9 +174,15 @@ public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMedi
         return null;
     }
 
+    /**
+     * Still images return {@code null} so SmartTube's {@code Video.hasVideo()} is false and
+     * {@code VideoActionPresenter} routes via {@code hasNestedItems()} → ChannelUploads click
+     * (see {@link #hasUploads()}), never {@code PlaybackPresenter.openVideo}. That avoids a
+     * black first video after opening a photo.
+     */
     @Override
     public String getVideoId() {
-        if (isAlbumBrowse()) {
+        if (isAlbumBrowse() || isStillImage()) {
             return null;
         }
         return mAsset != null ? mAsset.getId() : null;
@@ -260,9 +284,13 @@ public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMedi
         return false;
     }
 
+    /**
+     * Albums and still images: {@code Video.hasNestedItems()} so the click goes through
+     * {@code ChannelUploadsPresenter.openChannel} (wrapper intercepts stills → image viewer).
+     */
     @Override
     public boolean hasUploads() {
-        return isAlbumBrowse();
+        return isAlbumBrowse() || isStillImage();
     }
 
     @Override
@@ -283,8 +311,17 @@ public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMedi
                 String playlistId = getPlaylistId();
                 return playlistId != null && playlistId.equals(other.getPlaylistId());
             }
-            String videoId = getVideoId();
-            return videoId != null && videoId.equals(other.getVideoId());
+            if (mAsset != null) {
+                String id = mAsset.getId();
+                if (id == null) {
+                    return false;
+                }
+                if (other instanceof ImmichMediaItemAdapter) {
+                    ImmichAsset otherAsset = ((ImmichMediaItemAdapter) other).mAsset;
+                    return otherAsset != null && id.equals(otherAsset.getId());
+                }
+                return id.equals(other.getVideoId());
+            }
         }
         return false;
     }
@@ -295,7 +332,9 @@ public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMedi
             String playlistId = getPlaylistId();
             return playlistId != null ? playlistId.hashCode() : 0;
         }
-        String videoId = getVideoId();
-        return videoId != null ? videoId.hashCode() : 0;
+        if (mAsset != null && mAsset.getId() != null) {
+            return mAsset.getId().hashCode();
+        }
+        return 0;
     }
 }

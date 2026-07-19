@@ -117,6 +117,13 @@ object ImmichPlaybackBridge {
 
     private fun seedFormatCacheOnCurrentThread(asset: ImmichAsset): Boolean {
         return try {
+            if (!asset.isVideo) {
+                Log.w(
+                    SmartTublexApplication.TAG,
+                    "ImmichPlaybackBridge: refusing Exo seed for still image assetId=${asset.id}"
+                )
+                return false
+            }
             MediaSourceRegistry.setActiveSource(MediaSourceRegistry.Source.IMMICH)
             val stream = MediaSourceRegistry.getImmichServiceManager()
                 .mediaService

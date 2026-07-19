@@ -10,7 +10,9 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView
 import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager
+import de.developerleipzig.smarttublex.ImmichImageViewerActivity
 import de.developerleipzig.smarttublex.SmartTublexApplication
+import de.developerleipzig.smarttublex.misc.ImmichPlaybackBridge
 import de.developerleipzig.smarttublex.misc.PlexPlaybackBridge
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
@@ -65,6 +67,19 @@ class PlexChannelUploadsPresenter private constructor(context: Context) :
     }
 
     override fun openChannel(item: Video?) {
+        // WRAPPER: Immich stills — never open Playback or ChannelUploads grid
+        if (item != null) {
+            val still = ImmichPlaybackBridge.resolveImmichAsset(item)
+            if (still != null && !still.isVideo) {
+                val ctx = context ?: return
+                Log.i(
+                    SmartTublexApplication.TAG,
+                    "PlexChannelUploadsPresenter: Immich still → image viewer assetId=${still.id}"
+                )
+                ImmichImageViewerActivity.open(ctx, still)
+                return
+            }
+        }
         // WRAPPER: open Plex library browse stubs even if upstream nested/playlist guards miss
         if (item != null &&
             PlexPlaybackBridge.isPlexVideo(item) &&

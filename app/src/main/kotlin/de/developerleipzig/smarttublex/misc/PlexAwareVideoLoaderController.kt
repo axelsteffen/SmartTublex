@@ -8,6 +8,7 @@ import de.developerleipzig.smarttublex.SmartTublexApplication
 /**
  * WRAPPER: seeds Plex / Immich [MediaItemFormatInfo] into the upstream YouTube format cache
  * (network on IO thread) before [VideoLoaderController] asks YouTube for `videoId`.
+ * Immich still images open [ImmichImageViewerActivity] instead of ExoPlayer.
  */
 class PlexAwareVideoLoaderController : VideoLoaderController() {
     override fun onNewVideo(item: Video?) {
@@ -23,6 +24,7 @@ class PlexAwareVideoLoaderController : VideoLoaderController() {
                 PlexNextEpisodeResolver.seedNextEpisode(item)
             }
             item != null && ImmichPlaybackBridge.isImmichVideo(item) -> {
+                // Stills are routed via ChannelUploadsPresenter.openChannel (no PlaybackPresenter).
                 Log.i(
                     SmartTublexApplication.TAG,
                     "PlexAwareVideoLoaderController: preparing Immich stream videoId=${item.videoId}"

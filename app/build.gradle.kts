@@ -239,6 +239,47 @@ val packageWrapperApk by tasks.registering {
         check(!xml.contains("""android:targetActivity="com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity"""")) {
             "activity-alias still targets upstream SplashActivity"
         }
+        // WRAPPER: Immich still-image viewer (not present in upstream SmartTube APK).
+        val imageViewerName = "de.developerleipzig.smarttublex.ImmichImageViewerActivity"
+        val imageViewerActivity = """
+        <activity
+            android:name="$imageViewerName"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:configChanges="keyboard|keyboardHidden|navigation" />
+"""
+        if (!xml.contains(imageViewerName)) {
+            val appClose = "</application>"
+            check(xml.contains(appClose)) { "AndroidManifest missing </application>" }
+            xml = xml.replace(appClose, imageViewerActivity + appClose)
+        } else if (!xml.contains("""android:name="$imageViewerName"""") ||
+            !xml.contains("launchMode=\"singleTop\"")
+        ) {
+            // Rebuilds after first inject: ensure singleTop (stale viewer otherwise keeps old asset).
+            xml = xml.replace(
+                Regex(
+                    """\s*<activity\s+android:name="$imageViewerName"[^/]*/>""",
+                    RegexOption.MULTILINE
+                ),
+                imageViewerActivity
+            )
+            if (!xml.contains("launchMode=\"singleTop\"") || !xml.contains(imageViewerName)) {
+                // Multiline / attribute-order fallback: strip old block then re-inject.
+                xml = xml.replace(
+                    Regex(
+                        """\s*<activity[^>]*android:name="$imageViewerName"[^>]*(/>|>\s*</activity>)""",
+                        setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL)
+                    ),
+                    ""
+                )
+                val appClose = "</application>"
+                xml = xml.replace(appClose, imageViewerActivity + appClose)
+            }
+        }
+        check(xml.contains(imageViewerName) && xml.contains("launchMode=\"singleTop\"")) {
+            "Failed to inject ImmichImageViewerActivity (singleTop) into AndroidManifest.xml"
+        }
         manifest.writeText(xml)
 
         // SmartTublex branding: overwrite upstream mipmaps + display name
