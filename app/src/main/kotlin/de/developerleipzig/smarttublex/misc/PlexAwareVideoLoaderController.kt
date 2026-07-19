@@ -19,13 +19,18 @@ class PlexAwareVideoLoaderController : VideoLoaderController() {
                 )
                 // Must finish before super: loadFormatInfo reads the YT format cache next.
                 PlexPlaybackBridge.seedFormatCacheIfPlex(item)
+                // WRAPPER: seed next episode for SmartTube onPlayEnd → loadNext → getNext()
+                PlexNextEpisodeResolver.seedNextEpisode(item)
             }
             item != null && ImmichPlaybackBridge.isImmichVideo(item) -> {
                 Log.i(
                     SmartTublexApplication.TAG,
                     "PlexAwareVideoLoaderController: preparing Immich stream videoId=${item.videoId}"
                 )
-                ImmichPlaybackBridge.seedFormatCacheIfImmich(item)
+                // Skip super when seed fails — avoids YouTube path + opaque Exo errors.
+                if (!ImmichPlaybackBridge.seedFormatCacheIfImmich(item)) {
+                    return
+                }
             }
         }
         super.onNewVideo(item)
