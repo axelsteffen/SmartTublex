@@ -18,22 +18,28 @@ public final class ImmichMediaGroupAdapter implements MediaGroup {
     public enum Kind {
         ALBUM_ROW,
         ALBUM_GRID,
-        RECENT_VIDEOS
+        RECENT_VIDEOS,
+        YEAR_ROW,
+        YEAR_GRID,
+        ALBUMS_LIST
     }
 
     private final Kind mKind;
     private final ImmichAlbum mAlbum;
+    private final int mYear;
     private final String mTitle;
     private final List<MediaItem> mMediaItems;
     private final String mNextPageKey;
 
     private ImmichMediaGroupAdapter(Kind kind,
                                     @Nullable ImmichAlbum album,
+                                    int year,
                                     @Nullable String title,
                                     List<MediaItem> mediaItems,
                                     @Nullable String nextPageKey) {
         mKind = kind != null ? kind : Kind.ALBUM_ROW;
         mAlbum = album;
+        mYear = year;
         mTitle = title;
         mMediaItems = mediaItems;
         mNextPageKey = nextPageKey;
@@ -57,7 +63,7 @@ public final class ImmichMediaGroupAdapter implements MediaGroup {
         appendAssets(mediaItems, items);
         List<MediaItem> result = mediaItems.isEmpty() ? null : mediaItems;
         return new ImmichMediaGroupAdapter(
-                Kind.ALBUM_ROW, album, null, result, nextPageKeyFrom(page));
+                Kind.ALBUM_ROW, album, -1, null, result, nextPageKeyFrom(page));
     }
 
     /**
@@ -74,7 +80,62 @@ public final class ImmichMediaGroupAdapter implements MediaGroup {
         appendAssets(mediaItems, items);
         List<MediaItem> result = mediaItems.isEmpty() ? null : mediaItems;
         return new ImmichMediaGroupAdapter(
-                Kind.ALBUM_GRID, album, album.getTitle(), result, nextPageKeyFrom(page));
+                Kind.ALBUM_GRID, album, -1, album.getTitle(), result, nextPageKeyFrom(page));
+    }
+
+    /**
+     * Single row listing album cards only (no nested asset previews).
+     */
+    @Nullable
+    public static ImmichMediaGroupAdapter fromAlbumsList(@Nullable List<ImmichAlbum> albums) {
+        if (albums == null || albums.isEmpty()) {
+            return null;
+        }
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        for (ImmichAlbum album : albums) {
+            MediaItem stub = ImmichMediaItemAdapter.fromAlbumBrowse(album);
+            if (stub != null) {
+                mediaItems.add(stub);
+            }
+        }
+        if (mediaItems.isEmpty()) {
+            return null;
+        }
+        return new ImmichMediaGroupAdapter(
+                Kind.ALBUMS_LIST, null, -1, "Alben", mediaItems, null);
+    }
+
+    /**
+     * Assets for one calendar year (Fotos section).
+     */
+    @Nullable
+    public static ImmichMediaGroupAdapter fromYear(@Nullable Integer year,
+                                                   @Nullable List<ImmichAsset> items,
+                                                   @Nullable ImmichPage page) {
+        if (year == null || year <= 0) {
+            return null;
+        }
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        appendAssets(mediaItems, items);
+        if (mediaItems.isEmpty()) {
+            return null;
+        }
+        return new ImmichMediaGroupAdapter(
+                Kind.YEAR_ROW, null, year, String.valueOf(year), mediaItems, nextPageKeyFrom(page));
+    }
+
+    @Nullable
+    public static ImmichMediaGroupAdapter fromYearGrid(int year,
+                                                       @Nullable List<ImmichAsset> items,
+                                                       @Nullable ImmichPage page) {
+        if (year <= 0) {
+            return null;
+        }
+        ArrayList<MediaItem> mediaItems = new ArrayList<>();
+        appendAssets(mediaItems, items);
+        List<MediaItem> result = mediaItems.isEmpty() ? null : mediaItems;
+        return new ImmichMediaGroupAdapter(
+                Kind.YEAR_GRID, null, year, String.valueOf(year), result, nextPageKeyFrom(page));
     }
 
     /**
@@ -96,7 +157,7 @@ public final class ImmichMediaGroupAdapter implements MediaGroup {
             return null;
         }
         return new ImmichMediaGroupAdapter(
-                Kind.RECENT_VIDEOS, null, title, mediaItems, nextPageKeyFrom(page));
+                Kind.RECENT_VIDEOS, null, -1, title, mediaItems, nextPageKeyFrom(page));
     }
 
     /**
@@ -115,11 +176,15 @@ public final class ImmichMediaGroupAdapter implements MediaGroup {
             return null;
         }
         return new ImmichMediaGroupAdapter(
-                base.mKind, base.mAlbum, base.mTitle, mediaItems, nextPageKeyFrom(page));
+                base.mKind, base.mAlbum, base.mYear, base.mTitle, mediaItems, nextPageKeyFrom(page));
     }
 
     public Kind getKind() {
         return mKind;
+    }
+
+    public int getYear() {
+        return mYear;
     }
 
     @Nullable
@@ -153,7 +218,10 @@ public final class ImmichMediaGroupAdapter implements MediaGroup {
 
     @Override
     public String getParams() {
-        return mAlbum != null ? mAlbum.getId() : null;
+        if (mAlbum != null) {
+            return mAlbum.getId();
+        }
+        return mYear > 0 ? String.valueOf(mYear) : null;
     }
 
     @Override

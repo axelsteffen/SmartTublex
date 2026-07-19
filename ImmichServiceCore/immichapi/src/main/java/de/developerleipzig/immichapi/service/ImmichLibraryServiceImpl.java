@@ -10,6 +10,7 @@ import de.developerleipzig.immichapi.network.dto.AlbumResponseDto;
 import de.developerleipzig.immichapi.network.dto.AssetResponseDto;
 import de.developerleipzig.immichapi.network.dto.MetadataSearchDto;
 import de.developerleipzig.immichapi.network.dto.SearchResponseDto;
+import de.developerleipzig.immichapi.network.dto.TimeBucketDto;
 import de.developerleipzig.immichapi.prefs.ImmichPrefs;
 import de.developerleipzig.immichserviceinterfaces.ImmichLibraryService;
 import de.developerleipzig.immichserviceinterfaces.data.ImmichAlbum;
@@ -20,7 +21,9 @@ import com.liskovsoft.sharedutils.mylogger.Log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 
 import io.reactivex.Observable;
 import retrofit2.Response;
@@ -78,15 +81,26 @@ public class ImmichLibraryServiceImpl implements ImmichLibraryService {
         return Observable.fromCallable(() -> fetchRecentVideosPage(offset));
     }
 
+    @Override
+    public Observable<List<Integer>> getPhotoYearsObserve() {
+        return Observable.fromCallable(this::fetchPhotoYears);
+    }
+
+    @Override
+    public Observable<ImmichAssetPage> getAssetsForYearPageObserve(int year, int offset) {
+        return Observable.fromCallable(() -> fetchAssetsForYearPage(year, offset));
+    }
+
     private List<ImmichAlbum> fetchAlbums() throws IOException {
         Response<List<AlbumResponseDto>> response = api().getAllAlbums().execute();
         if (!response.isSuccessful() || response.body() == null) {
             throw new IOException(formatFailure("albums", response));
         }
         String base = apiBaseUrl();
+        String apiKey = prefs().getApiKey();
         List<ImmichAlbum> result = new ArrayList<>();
         for (AlbumResponseDto dto : response.body()) {
-            ImmichAlbum album = ImmichAlbumImpl.fromDto(dto, base);
+            ImmichAlbum album = ImmichAlbumImpl.fromDto(dto, base, apiKey);
             if (album != null) {
                 result.add(album);
             }
@@ -116,6 +130,52 @@ public class ImmichLibraryServiceImpl implements ImmichLibraryService {
         return executeSearch(body, offset);
     }
 
+    private List<Integer> fetchPhotoYears() throws IOException {
+        Response<List<TimeBucketDto>> response = api().getTimelineBuckets("YEAR").execute();
+        if (!response.isSuccessful() || response.body() == null) {
+            throw new IOException(formatFailure("timeline/buckets", response));
+        }
+        LinkedHashSet<Integer> years = new LinkedHashSet<>();
+        for (TimeBucketDto bucket : response.body()) {
+            if (bucket == null || bucket.count <= 0 || bucket.timeBucket == null) {
+                continue;
+            }
+            Integer year = parseYear(bucket.timeBucket);
+            if (year != null) {
+                years.add(year);
+            }
+        }
+        List<Integer> result = new ArrayList<>(years);
+        Collections.sort(result, Collections.reverseOrder());
+        Log.d(TAG, "Fetched " + result.size() + " photo years");
+        return result;
+    }
+
+    private ImmichAssetPage fetchAssetsForYearPage(int year, int offset) throws IOException {
+        if (year < 1000 || year > 9999) {
+            throw new IllegalArgumentException("invalid year: " + year);
+        }
+        MetadataSearchDto body = new MetadataSearchDto();
+        body.takenAfter = String.format(Locale.US, "%04d-01-01T00:00:00.000Z", year);
+        body.takenBefore = String.format(Locale.US, "%04d-01-01T00:00:00.000Z", year + 1);
+        body.page = offsetToPage(offset);
+        body.size = mPageSize;
+        body.order = "desc";
+        return executeSearch(body, offset);
+    }
+
+    /** Extracts calendar year from Immich {@code timeBucket} (ISO date or year prefix). */
+    static Integer parseYear(String timeBucket) {
+        if (timeBucket == null || timeBucket.length() < 4) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(timeBucket.substring(0, 4));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private ImmichAssetPage executeSearch(MetadataSearchDto body, int offset) throws IOException {
         Response<SearchResponseDto> response = api().searchMetadata(body).execute();
         if (!response.isSuccessful() || response.body() == null) {
@@ -123,13 +183,14 @@ public class ImmichLibraryServiceImpl implements ImmichLibraryService {
         }
         SearchResponseDto.SearchAssetResponseDto assets = response.body().assets;
         String base = apiBaseUrl();
+        String apiKey = prefs().getApiKey();
         List<ImmichAsset> items = new ArrayList<>();
         int total = -1;
         if (assets != null) {
             total = assets.total;
             if (assets.items != null) {
                 for (AssetResponseDto dto : assets.items) {
-                    ImmichAsset asset = ImmichAssetImpl.fromDto(dto, base);
+                    ImmichAsset asset = ImmichAssetImpl.fromDto(dto, base, apiKey);
                     if (asset != null) {
                         items.add(asset);
                     }

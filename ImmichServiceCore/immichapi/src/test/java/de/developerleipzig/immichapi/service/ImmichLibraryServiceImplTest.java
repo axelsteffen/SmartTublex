@@ -99,6 +99,7 @@ public class ImmichLibraryServiceImplTest {
         assertEquals("Vacation", albums.get(0).getTitle());
         assertEquals(3, albums.get(0).getAssetCount());
         assertTrue(albums.get(0).getThumbUrl().contains("assets/thumb-1/thumbnail"));
+        assertTrue(albums.get(0).getThumbUrl().contains("apiKey=server-key"));
 
         RecordedRequest request = mServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(request);
@@ -129,6 +130,7 @@ public class ImmichLibraryServiceImplTest {
         assertTrue(first.isVideo());
         assertEquals(12500L, first.getDurationMs());
         assertTrue(first.getThumbUrl().contains("assets/vid-1/thumbnail"));
+        assertTrue(first.getThumbUrl().contains("apiKey=server-key"));
         assertEquals(2, ((ImmichPage) page).getNextOffset());
 
         RecordedRequest request = mServer.takeRequest(1, TimeUnit.SECONDS);
@@ -164,5 +166,53 @@ public class ImmichLibraryServiceImplTest {
         String body = request.getBody().readUtf8();
         assertTrue(body.contains("\"albumIds\":[\"alb-9\"]"));
         assertTrue(body.contains("\"page\":1"));
+    }
+
+    @Test
+    public void getPhotoYearsObserve_mapsYearBucketsNewestFirst() throws Exception {
+        mServer.enqueue(new MockResponse().setResponseCode(200).setBody("["
+                + "{\"timeBucket\":\"2023-01-01T00:00:00.000Z\",\"count\":2},"
+                + "{\"timeBucket\":\"2025-01-01T00:00:00.000Z\",\"count\":5},"
+                + "{\"timeBucket\":\"2024-06-01T00:00:00.000Z\",\"count\":0},"
+                + "{\"timeBucket\":\"bad\",\"count\":1}"
+                + "]"));
+
+        List<Integer> years = mService.getPhotoYearsObserve().blockingFirst();
+
+        assertEquals(2, years.size());
+        assertEquals(Integer.valueOf(2025), years.get(0));
+        assertEquals(Integer.valueOf(2023), years.get(1));
+
+        RecordedRequest request = mServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(request);
+        assertTrue(request.getPath().contains("/api/timeline/buckets"));
+        assertTrue(request.getPath().contains("size=YEAR"));
+    }
+
+    @Test
+    public void getAssetsForYearPageObserve_sendsTakenBounds() throws Exception {
+        mServer.enqueue(new MockResponse().setResponseCode(200).setBody("{"
+                + "\"assets\":{"
+                + "\"total\":1,\"count\":1,\"items\":["
+                + "{\"id\":\"img-y\",\"originalFileName\":\"y.jpg\",\"type\":\"IMAGE\","
+                + "\"duration\":0,\"originalMimeType\":\"image/jpeg\"}"
+                + "]"
+                + "}}"));
+
+        ImmichAssetPage page = mService.getAssetsForYearPageObserve(2024, 0).blockingFirst();
+        assertEquals(1, page.getItems().size());
+
+        RecordedRequest request = mServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(request);
+        String body = request.getBody().readUtf8();
+        assertTrue(body.contains("\"takenAfter\":\"2024-01-01T00:00:00.000Z\""));
+        assertTrue(body.contains("\"takenBefore\":\"2025-01-01T00:00:00.000Z\""));
+    }
+
+    @Test
+    public void parseYear_readsIsoPrefix() {
+        assertEquals(Integer.valueOf(2024), ImmichLibraryServiceImpl.parseYear("2024-01-01T00:00:00.000Z"));
+        assertEquals(null, ImmichLibraryServiceImpl.parseYear("x"));
+        assertEquals(null, ImmichLibraryServiceImpl.parseYear(null));
     }
 }

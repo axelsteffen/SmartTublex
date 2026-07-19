@@ -23,4 +23,12 @@ public final class MetadataSearchDto {
 
     @SerializedName("withExif")
     public Boolean withExif;
+
+    /** Inclusive lower bound (ISO-8601), e.g. {@code 2024-01-01T00:00:00.000Z}. */
+    @SerializedName("takenAfter")
+    public String takenAfter;
+
+    /** Exclusive upper bound (ISO-8601). */
+    @SerializedName("takenBefore")
+    public String takenBefore;
 }

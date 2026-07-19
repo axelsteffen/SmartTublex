@@ -26,4 +26,16 @@ public interface ImmichLibraryService {
      * @param offset zero-based item offset
      */
     Observable<ImmichAssetPage> getRecentVideosPageObserve(int offset);
+
+    /**
+     * Calendar years that have at least one timeline asset (newest first).
+     */
+    Observable<List<Integer>> getPhotoYearsObserve();
+
+    /**
+     * Paginated assets taken in {@code year} (all types).
+     *
+     * @param offset zero-based item offset
+     */
+    Observable<ImmichAssetPage> getAssetsForYearPageObserve(int year, int offset);
 }
