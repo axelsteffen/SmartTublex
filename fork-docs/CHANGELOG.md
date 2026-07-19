@@ -55,6 +55,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `PlexBrowsePresenter`: `getMoviesRowsObserve` / `getShowsRowsObserve` / `getWatchlistRowsObserve` (Continue Watching → Recently Added → Alle-… card; watchlist movies+shows by year)
 - `ImmichBrowsePresenter`: `getPhotosRowsObserve` (year rows) / `getAlbumsRowsObserve` (album cards)
 - Series autoplay: `PlexNextEpisodeResolver` seeds `Video.nextMediaItem` from season group or PMS children (incl. next season)
+- Fix series autoplay from Continue Watching: only use group siblings for season containers; `loadNext` prefers `nextMediaItem` over shelf neighbors
 - Immich Phase 3a: `MediaSourceRegistry.Source.IMMICH`, `isImmichEnabled()`, `getImmichServiceManager()`
 - Immich Phase 3b/3c: `SidebarSectionRegistry` Immich sections (now Fotos/Alben), `ImmichBrowseInstaller` → `ContentBrowseInstaller`, `ImmichSignInPresenter`
 - Immich Phase 3d: `ImmichBrowsePresenter` rows / continue / album grid; `PlexChannelUploadsPresenter` opens Immich album grids

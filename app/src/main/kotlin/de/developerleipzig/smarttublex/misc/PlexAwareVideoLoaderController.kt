@@ -35,4 +35,26 @@ class PlexAwareVideoLoaderController : VideoLoaderController() {
         }
         super.onNewVideo(item)
     }
+
+    /**
+     * Prefer [Video.nextMediaItem] for Plex episodes so Continue Watching / section
+     * siblings do not win over the series next episode via SuggestionsController.
+     */
+    override fun loadNext() {
+        val video = getVideo()
+        val nextItem = video?.nextMediaItem
+        if (video != null
+            && nextItem != null
+            && PlexPlaybackBridge.isPlexVideo(video)
+            && PlexNextEpisodeResolver.isEpisode(video)
+        ) {
+            Log.i(
+                SmartTublexApplication.TAG,
+                "PlexAwareVideoLoaderController: loadNext via nextMediaItem → ${nextItem.videoId}"
+            )
+            onSuggestionItemClicked(Video.from(nextItem))
+            return
+        }
+        super.loadNext()
+    }
 }

@@ -4,6 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
+import de.developerleipzig.plexapi.adapter.PlexMediaGroupAdapter
 import de.developerleipzig.plexapi.adapter.PlexMediaItemAdapter
 import de.developerleipzig.plexapi.library.PlexMediaItemImpl
 import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem
@@ -16,13 +17,20 @@ import io.reactivex.schedulers.Schedulers
  * [com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsController.getNext]
  * can autoplay the next episode.
  *
- * Prefers the current [Video.group] (season grid); falls back to PMS children API.
+ * Prefers the current [Video.group] only when it is a season/episode container;
+ * falls back to PMS children API for Continue Watching and other shelves.
  */
 object PlexNextEpisodeResolver {
     private const val TYPE_EPISODE = "episode"
     private const val TYPE_SEASON = "season"
 
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    fun isEpisode(video: Video?): Boolean {
+        if (video == null || !PlexPlaybackBridge.isPlexVideo(video)) return false
+        val item = PlexPlaybackBridge.resolvePlexItem(video) ?: return false
+        return TYPE_EPISODE.equals(item.type, ignoreCase = true)
+    }
 
     /**
      * Sets [Video.nextMediaItem] when the current item is a Plex episode.
@@ -65,6 +73,13 @@ object PlexNextEpisodeResolver {
     }
 
     internal fun resolveFromGroup(video: Video): MediaItem? {
+        // Only season/episode grids — Continue Watching / Recently Added shelves must not
+        // supply the "next" sibling (that would play the next On Deck title).
+        val mediaGroup = video.group?.mediaGroup
+        if (mediaGroup !is PlexMediaGroupAdapter || !mediaGroup.isContainerGroup) {
+            return null
+        }
+
         val videos = video.group?.videos ?: return null
         val currentId = video.videoId ?: return null
         val start = videos.indexOfFirst { it.videoId == currentId }
