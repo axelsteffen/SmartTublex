@@ -26,6 +26,10 @@ public final class ImmichAssetImpl implements ImmichAsset {
     }
 
     public static ImmichAssetImpl fromDto(AssetResponseDto dto, String apiBaseUrl) {
+        return fromDto(dto, apiBaseUrl, null);
+    }
+
+    public static ImmichAssetImpl fromDto(AssetResponseDto dto, String apiBaseUrl, String apiKey) {
         if (dto == null || dto.id == null || dto.id.isEmpty()) {
             return null;
         }
@@ -38,7 +42,7 @@ public final class ImmichAssetImpl implements ImmichAsset {
                 title,
                 dto.type != null ? dto.type : TYPE_OTHER,
                 durationMs,
-                ImmichUrlHelper.assetThumbnailUrl(apiBaseUrl, dto.id),
+                ImmichUrlHelper.assetThumbnailUrl(apiBaseUrl, dto.id, apiKey),
                 dto.originalMimeType);
     }
 

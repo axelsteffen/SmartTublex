@@ -17,7 +17,8 @@ import okhttp3.Response
  * Attaches Immich `x-api-key` to ExoPlayer media requests.
  *
  * Strategy (wrapper-only): host-scoped OkHttp interceptor + force OkHttp player data source
- * while Immich is signed in, then clear ExoMediaSourceFactory cache so the next open rebuilds.
+ * + skip profile-level check (odd H.264 profiles) while Immich is signed in.
+ * Does not force software decode — SW H.264 on TVs causes stuttering / slow-motion.
  */
 object ImmichAuthHeaderInstaller {
     private const val HEADER_API_KEY = "x-api-key"
@@ -28,6 +29,17 @@ object ImmichAuthHeaderInstaller {
     @Volatile
     private var savedDataSource: Int? = null
 
+    @Volatile
+    private var savedSkipProfileLevel: Boolean? = null
+
+    /** Cleared once after OkHttp is forced so a stale Cronet/Default factory is rebuilt. */
+    @Volatile
+    private var pendingFactoryClear = false
+
+    /** One-shot undo of SW-decoder prefs left by older Immich builds. */
+    @Volatile
+    private var staleSwDecoderCleared = false
+
     fun ensureReady(context: Context) {
         if (!MediaSourceRegistry.isImmichEnabled()) return
         val prefs = ImmichPrefs.instance(context.applicationContext)
@@ -35,28 +47,43 @@ object ImmichAuthHeaderInstaller {
         val serverUrl = prefs.serverUrl
         if (apiKey.isNullOrEmpty() || serverUrl.isNullOrEmpty()) return
 
+        val app = context.applicationContext
         installInterceptor()
-        forceOkHttpDataSource(context.applicationContext)
-        clearExoMediaSourceCache(context.applicationContext)
+        forceOkHttpDataSource(app)
+        clearStaleSwDecoderForce(app)
+        forceSkipProfileLevelForImmich(app)
+        // Playback URLs already carry ?apiKey=. Do not release ExoMediaSourceFactory here:
+        // ensureReady runs inside onNewVideo; clearing mid-prepare → Unexpected playback error null.
+        pendingFactoryClear = false
     }
 
-    /** Restore the user's previous player data source after Immich sign-out. */
+    /** Restore the user's previous player data source / profile-skip after Immich sign-out. */
     fun restorePlayerDataSource(context: Context) {
-        val previous = savedDataSource ?: return
-        savedDataSource = null
+        val app = context.applicationContext
         try {
-            PlayerTweaksData.instance(context.applicationContext).setPlayerDataSource(previous)
-            clearExoMediaSourceCache(context.applicationContext)
-            Log.i(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: restored player data source=$previous")
+            val tweaks = PlayerTweaksData.instance(app)
+            savedDataSource?.let {
+                tweaks.setPlayerDataSource(it)
+                Log.i(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: restored player data source=$it")
+            }
+            savedSkipProfileLevel?.let {
+                tweaks.setProfileLevelCheckSkipped(it)
+                Log.i(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: restored skipProfileLevel=$it")
+            }
+            savedDataSource = null
+            savedSkipProfileLevel = null
+            clearExoMediaSourceCache(app)
+            pendingFactoryClear = false
         } catch (t: Throwable) {
-            Log.w(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: restore data source failed", t)
+            Log.w(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: restore player prefs failed", t)
         }
     }
 
-    private fun installInterceptor() {
-        if (interceptorInstalled) return
+    /** @return true if the interceptor was newly installed */
+    private fun installInterceptor(): Boolean {
+        if (interceptorInstalled) return false
         synchronized(this) {
-            if (interceptorInstalled) return
+            if (interceptorInstalled) return false
             try {
                 val manager = OkHttpManager.instance()
                 val clientField = OkHttpManager::class.java.getDeclaredField("mClient")
@@ -68,18 +95,21 @@ object ImmichAuthHeaderInstaller {
                 clientField.set(manager, rebuilt)
                 interceptorInstalled = true
                 Log.i(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: OkHttp interceptor installed")
+                return true
             } catch (t: Throwable) {
                 Log.e(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: interceptor install failed", t)
+                return false
             }
         }
     }
 
-    private fun forceOkHttpDataSource(context: Context) {
+    /** @return true if the player data source preference was changed */
+    private fun forceOkHttpDataSource(context: Context): Boolean {
         try {
             val tweaks = PlayerTweaksData.instance(context)
             val current = tweaks.playerDataSource
             if (current == PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP) {
-                return
+                return false
             }
             if (savedDataSource == null) {
                 savedDataSource = current
@@ -89,29 +119,70 @@ object ImmichAuthHeaderInstaller {
                 SmartTublexApplication.TAG,
                 "ImmichAuthHeaderInstaller: forced OkHttp data source (was $current)"
             )
+            return true
         } catch (t: Throwable) {
             Log.w(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: force OkHttp failed", t)
+            return false
+        }
+    }
+
+    /**
+     * Older Immich builds forced SW decode (TV slow-mo). Clear once per process.
+     * Does not touch profile-level skip — Immich still enables that for HW edge cases.
+     */
+    private fun clearStaleSwDecoderForce(context: Context) {
+        if (staleSwDecoderCleared) return
+        staleSwDecoderCleared = true
+        try {
+            val tweaks = PlayerTweaksData.instance(context)
+            if (!tweaks.isSWDecoderForced) {
+                return
+            }
+            tweaks.setSWDecoderForced(false)
+            Log.i(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: cleared stuck SW decoder force")
+        } catch (t: Throwable) {
+            Log.w(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: clear SW decoder failed", t)
+        }
+    }
+
+    /** Skip Exo profile/level gating so odd but HW-decodable H.264 can play. */
+    private fun forceSkipProfileLevelForImmich(context: Context) {
+        try {
+            val tweaks = PlayerTweaksData.instance(context)
+            if (tweaks.isProfileLevelCheckSkipped) {
+                return
+            }
+            if (savedSkipProfileLevel == null) {
+                savedSkipProfileLevel = false
+            }
+            tweaks.setProfileLevelCheckSkipped(true)
+            Log.i(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: skip profile-level check")
+        } catch (t: Throwable) {
+            Log.w(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: skip profile-level failed", t)
         }
     }
 
     /**
      * Clears cached HttpDataSource factory on the live [ExoPlayerController] so the next
      * open rebuilds with OkHttp + interceptor.
+     * @return true if a factory was released
      */
-    private fun clearExoMediaSourceCache(context: Context) {
-        try {
-            val view = PlaybackPresenter.instance(context).view ?: return
+    private fun clearExoMediaSourceCache(context: Context): Boolean {
+        return try {
+            val view = PlaybackPresenter.instance(context).view ?: return false
             val exoField = view.javaClass.getDeclaredField("mExoPlayerController")
             exoField.isAccessible = true
-            val controller = exoField.get(view) ?: return
+            val controller = exoField.get(view) ?: return false
             val factoryField = controller.javaClass.getDeclaredField("mMediaSourceFactory")
             factoryField.isAccessible = true
-            val factory = factoryField.get(controller) ?: return
+            val factory = factoryField.get(controller) ?: return false
             factory.javaClass.getMethod("release").invoke(factory)
             Log.i(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: ExoMediaSourceFactory cache cleared")
+            true
         } catch (t: Throwable) {
             // Player not open yet — next ExoMediaSourceFactory will pick OkHttp.
             Log.d(SmartTublexApplication.TAG, "ImmichAuthHeaderInstaller: no live factory to clear (${t.message})")
+            false
         }
     }
 

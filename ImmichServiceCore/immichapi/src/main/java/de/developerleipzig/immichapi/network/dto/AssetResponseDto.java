@@ -19,6 +19,13 @@ public final class AssetResponseDto {
     @SerializedName("originalMimeType")
     public String originalMimeType;
 
+    /**
+     * Legacy Immich field (removed from current AssetResponseDto OpenAPI).
+     * Still parsed when present on older servers.
+     */
+    @SerializedName("encodedVideoPath")
+    public String encodedVideoPath;
+
     @SerializedName("localDateTime")
     public String localDateTime;
 }

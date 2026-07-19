@@ -15,8 +15,12 @@ public final class ImmichHeadersInterceptor implements Interceptor {
     @Override
     public Response intercept(Chain chain) throws IOException {
         Request original = chain.request();
-        Request.Builder builder = original.newBuilder()
-                .header(ImmichHeaders.ACCEPT, ImmichHeaders.ACCEPT_JSON);
+        Request.Builder builder = original.newBuilder();
+        // Media endpoints must not force Accept: application/json (breaks Content-Type probes).
+        if (!isMediaPath(original.url().encodedPath())
+                && original.header(ImmichHeaders.ACCEPT) == null) {
+            builder.header(ImmichHeaders.ACCEPT, ImmichHeaders.ACCEPT_JSON);
+        }
 
         if (original.header(ImmichHeaders.API_KEY) == null) {
             String apiKey = resolveApiKey();
@@ -26,6 +30,15 @@ public final class ImmichHeadersInterceptor implements Interceptor {
         }
 
         return chain.proceed(builder.build());
+    }
+
+    private static boolean isMediaPath(String path) {
+        if (path == null) {
+            return false;
+        }
+        return path.contains("/video/playback")
+                || path.contains("/original")
+                || path.contains("/thumbnail");
     }
 
     private static String resolveApiKey() {

@@ -35,4 +35,19 @@ public class ImmichUrlHelperTest {
                 "https://immich.example/api/assets/abc/original",
                 ImmichUrlHelper.assetOriginalUrl(base, "abc"));
     }
+
+    @Test
+    public void assetUrls_appendApiKeyQuery() {
+        String base = "https://immich.example/api/";
+        Assert.assertEquals(
+                "https://immich.example/api/assets/abc/thumbnail?apiKey=secret",
+                ImmichUrlHelper.assetThumbnailUrl(base, "abc", "secret"));
+        Assert.assertEquals(
+                "https://immich.example/api/assets/abc/video/playback?apiKey=secret",
+                ImmichUrlHelper.assetVideoPlaybackUrl(base, "abc", "secret"));
+        Assert.assertEquals(
+                "https://immich.example/api/assets/abc/thumbnail?apiKey=secret",
+                ImmichUrlHelper.withApiKey(
+                        "https://immich.example/api/assets/abc/thumbnail?apiKey=secret", "other"));
+    }
 }

@@ -24,10 +24,15 @@ public final class ImmichAlbumImpl implements ImmichAlbum {
     }
 
     public static ImmichAlbumImpl fromDto(AlbumResponseDto dto, String apiBaseUrl) {
+        return fromDto(dto, apiBaseUrl, null);
+    }
+
+    public static ImmichAlbumImpl fromDto(AlbumResponseDto dto, String apiBaseUrl, String apiKey) {
         if (dto == null || dto.id == null || dto.id.isEmpty()) {
             return null;
         }
-        String thumbUrl = ImmichUrlHelper.assetThumbnailUrl(apiBaseUrl, dto.albumThumbnailAssetId);
+        String thumbUrl = ImmichUrlHelper.assetThumbnailUrl(
+                apiBaseUrl, dto.albumThumbnailAssetId, apiKey);
         return new ImmichAlbumImpl(
                 dto.id,
                 dto.albumName != null ? dto.albumName : dto.id,

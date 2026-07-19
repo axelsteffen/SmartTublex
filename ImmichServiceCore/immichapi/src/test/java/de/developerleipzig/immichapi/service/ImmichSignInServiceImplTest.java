@@ -13,6 +13,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.android.plugins.RxAndroidPlugins;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -37,6 +39,10 @@ public class ImmichSignInServiceImplTest {
 
     @Before
     public void setUp() throws Exception {
+        // RxHelper.fromCallable observes on Android main; trampoline keeps JVM tests synchronous.
+        RxAndroidPlugins.setInitMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+        RxAndroidPlugins.setMainThreadSchedulerHandler(scheduler -> Schedulers.trampoline());
+
         ImmichPrefs.unhold();
         ImmichRetrofitHelper.reset();
 
@@ -58,6 +64,7 @@ public class ImmichSignInServiceImplTest {
         mServer.shutdown();
         ImmichPrefs.unhold();
         ImmichRetrofitHelper.reset();
+        RxAndroidPlugins.reset();
     }
 
     @Test

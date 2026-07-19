@@ -9,6 +9,7 @@ import de.developerleipzig.immichapi.prefs.ImmichPrefs;
 import de.developerleipzig.immichserviceinterfaces.ImmichSignInService;
 import de.developerleipzig.immichserviceinterfaces.data.ImmichUser;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.sharedutils.rx.RxHelper;
 
 import java.io.IOException;
 
@@ -80,7 +81,8 @@ public class ImmichSignInServiceImpl implements ImmichSignInService {
 
     @Override
     public Observable<ImmichUser> validateObserve() {
-        return Observable.fromCallable(this::validate);
+        // RxHelper: IO subscribe + mainThread observe (avoids NetworkOnMainThreadException).
+        return RxHelper.fromCallable(this::validate);
     }
 
     private ImmichUser validate() throws IOException {

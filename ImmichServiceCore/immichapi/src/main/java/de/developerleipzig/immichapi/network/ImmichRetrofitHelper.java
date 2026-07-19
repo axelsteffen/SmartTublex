@@ -56,6 +56,11 @@ public final class ImmichRetrofitHelper {
                 .build();
     }
 
+    /** Shared OkHttp client (API key interceptor) for Retrofit + media Content-Type probes. */
+    public static synchronized OkHttpClient client() {
+        return getClient();
+    }
+
     private static synchronized OkHttpClient getClient() {
         if (sClient == null) {
             sClient = new OkHttpClient.Builder()

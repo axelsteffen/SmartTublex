@@ -1,5 +1,9 @@
 package de.developerleipzig.immichapi.network;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 /**
  * Builds absolute Immich API URLs from a configured server base.
  */
@@ -36,23 +40,57 @@ public final class ImmichUrlHelper {
     }
 
     public static String assetThumbnailUrl(String apiBaseUrl, String assetId) {
+        return assetThumbnailUrl(apiBaseUrl, assetId, null);
+    }
+
+    public static String assetThumbnailUrl(String apiBaseUrl, String assetId, String apiKey) {
         if (assetId == null || assetId.isEmpty()) {
             return null;
         }
-        return normalizeApiBaseUrl(apiBaseUrl) + "assets/" + assetId + "/thumbnail";
+        return withApiKey(normalizeApiBaseUrl(apiBaseUrl) + "assets/" + assetId + "/thumbnail", apiKey);
     }
 
     public static String assetVideoPlaybackUrl(String apiBaseUrl, String assetId) {
+        return assetVideoPlaybackUrl(apiBaseUrl, assetId, null);
+    }
+
+    public static String assetVideoPlaybackUrl(String apiBaseUrl, String assetId, String apiKey) {
         if (assetId == null || assetId.isEmpty()) {
             return null;
         }
-        return normalizeApiBaseUrl(apiBaseUrl) + "assets/" + assetId + "/video/playback";
+        return withApiKey(
+                normalizeApiBaseUrl(apiBaseUrl) + "assets/" + assetId + "/video/playback", apiKey);
     }
 
     public static String assetOriginalUrl(String apiBaseUrl, String assetId) {
+        return assetOriginalUrl(apiBaseUrl, assetId, null);
+    }
+
+    public static String assetOriginalUrl(String apiBaseUrl, String assetId, String apiKey) {
         if (assetId == null || assetId.isEmpty()) {
             return null;
         }
-        return normalizeApiBaseUrl(apiBaseUrl) + "assets/" + assetId + "/original";
+        return withApiKey(normalizeApiBaseUrl(apiBaseUrl) + "assets/" + assetId + "/original", apiKey);
+    }
+
+    /**
+     * Immich accepts {@code ?apiKey=} as an alternative to the {@code x-api-key} header.
+     * Embedding the key lets Glide / ExoPlayer fetch media without a custom OkHttp interceptor.
+     */
+    public static String withApiKey(String url, String apiKey) {
+        if (url == null || url.isEmpty() || apiKey == null || apiKey.isEmpty()) {
+            return url;
+        }
+        if (url.contains("apiKey=")) {
+            return url;
+        }
+        String encoded;
+        try {
+            encoded = URLEncoder.encode(apiKey, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            encoded = apiKey;
+        }
+        char sep = url.indexOf('?') >= 0 ? '&' : '?';
+        return url + sep + "apiKey=" + encoded;
     }
 }

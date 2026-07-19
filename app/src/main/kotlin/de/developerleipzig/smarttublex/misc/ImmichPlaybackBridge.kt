@@ -7,7 +7,9 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo
 import de.developerleipzig.immichapi.adapter.ImmichMediaItemAdapter
 import de.developerleipzig.immichapi.adapter.ImmichMediaItemFormatInfo
 import de.developerleipzig.immichapi.library.ImmichAssetImpl
+import de.developerleipzig.immichapi.media.ImmichPlaybackCompat
 import de.developerleipzig.immichserviceinterfaces.data.ImmichAsset
+import de.developerleipzig.immichserviceinterfaces.data.ImmichStreamInfo
 import com.liskovsoft.sharedutils.helpers.MessageHelpers
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
@@ -120,6 +122,9 @@ object ImmichPlaybackBridge {
                 .mediaService
                 .getStreamInfoObserve(asset)
                 .blockingFirst()
+            if (!preflightPlayable(asset, stream)) {
+                return false
+            }
             val format = ImmichMediaItemFormatInfo.from(asset, stream)
             if (format == null) {
                 Log.e(
@@ -133,7 +138,9 @@ object ImmichPlaybackBridge {
             Log.i(
                 SmartTublexApplication.TAG,
                 "ImmichPlaybackBridge: seeded format cache assetId=${asset.id} " +
-                    "urls=${format.containsUrlFormats()}"
+                    "urls=${format.containsUrlFormats()} container=${stream.container} " +
+                    "tvDirectPlay=${stream.hasEncodedVideo()} " +
+                    "playUrl=${redactApiKey(stream.url)}"
             )
             true
         } catch (t: Throwable) {
@@ -145,6 +152,27 @@ object ImmichPlaybackBridge {
             showPlaybackError(t)
             false
         }
+    }
+
+    /**
+     * Refuse only when Immich marked the stream unsafe (positive HEVC/AV1/VP9 sniff).
+     * UNKNOWN / H.264 proceed — late-moov files must not be blocked by the probe window.
+     */
+    private fun preflightPlayable(asset: ImmichAsset, stream: ImmichStreamInfo): Boolean {
+        if (!asset.isVideo) {
+            return true
+        }
+        if (ImmichPlaybackCompat.isLikelyPlayableOnTv(stream.hasEncodedVideo(), stream.container)) {
+            return true
+        }
+        val msg = ImmichPlaybackCompat.unsupportedMessage(stream.container)
+        Log.w(
+            SmartTublexApplication.TAG,
+            "ImmichPlaybackBridge: refusing Direct Play assetId=${asset.id} " +
+                "encoded=${stream.hasEncodedVideo()} container=${stream.container}"
+        )
+        showPlaybackError(IllegalStateException(msg))
+        return false
     }
 
     private fun showPlaybackError(error: Throwable) {
@@ -192,4 +220,8 @@ object ImmichPlaybackBridge {
         field.isAccessible = true
         field.set(service, format)
     }
+
+    /** Keeps play URLs readable in logcat without leaking the API key. */
+    private fun redactApiKey(url: String?): String? =
+        url?.replace(Regex("([?&]apiKey=)[^&]*"), "$1***")
 }
