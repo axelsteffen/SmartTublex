@@ -8,7 +8,10 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -23,6 +26,8 @@ import de.developerleipzig.immichapi.network.ImmichUrlHelper
 import de.developerleipzig.immichapi.prefs.ImmichPrefs
 import de.developerleipzig.immichserviceinterfaces.data.ImmichAsset
 import okhttp3.Request
+import java.io.ByteArrayInputStream
+import java.io.File
 import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -161,8 +166,12 @@ class ImmichImageViewerActivity : Activity() {
                     val bytes = resp.body()?.bytes()
                         ?: throw IllegalStateException("Empty Immich image body")
                     val metrics = resources.displayMetrics
-                    val bitmap = decodeSampled(bytes, metrics.widthPixels, metrics.heightPixels)
-                        ?: throw IllegalStateException("Unable to decode Immich image")
+                    val bitmap = decodeSampled(
+                        bytes,
+                        metrics.widthPixels,
+                        metrics.heightPixels,
+                        cacheDir
+                    ) ?: throw IllegalStateException("Unable to decode Immich image")
 
                     runOnUiThread {
                         if (isFinishing || generation != loadGeneration.get()) {
@@ -266,14 +275,21 @@ class ImmichImageViewerActivity : Activity() {
             }
         }
 
-        private fun decodeSampled(bytes: ByteArray, reqWidth: Int, reqHeight: Int): Bitmap? {
+        private fun decodeSampled(
+            bytes: ByteArray,
+            reqWidth: Int,
+            reqHeight: Int,
+            cacheDir: File
+        ): Bitmap? {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
             val opts = BitmapFactory.Options().apply {
                 inSampleSize = calculateInSampleSize(bounds, reqWidth, reqHeight)
                 inPreferredConfig = Bitmap.Config.RGB_565
             }
-            return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+            val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts) ?: return null
+            // WRAPPER: Immich /original keeps EXIF orientation; BitmapFactory ignores it
+            return applyExifOrientation(bytes, decoded, cacheDir)
         }
 
         private fun calculateInSampleSize(
@@ -292,6 +308,85 @@ class ImmichImageViewerActivity : Activity() {
                 }
             }
             return inSampleSize.coerceAtLeast(1)
+        }
+
+        /**
+         * Phone JPEGs often store rotation in EXIF while pixel data stays landscape.
+         * Immich thumbnails bake orientation in; /original does not.
+         */
+        private fun applyExifOrientation(bytes: ByteArray, source: Bitmap, cacheDir: File): Bitmap {
+            val orientation = readExifOrientation(bytes, cacheDir)
+            if (orientation == ExifInterface.ORIENTATION_NORMAL ||
+                orientation == ExifInterface.ORIENTATION_UNDEFINED
+            ) {
+                return source
+            }
+            val matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.setScale(-1f, 1f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.setRotate(180f)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+                    matrix.setRotate(180f)
+                    matrix.postScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    matrix.setRotate(90f)
+                    matrix.postScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.setRotate(90f)
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    matrix.setRotate(-90f)
+                    matrix.postScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.setRotate(-90f)
+                else -> return source
+            }
+            return try {
+                val rotated = Bitmap.createBitmap(
+                    source, 0, 0, source.width, source.height, matrix, true
+                )
+                if (rotated !== source) {
+                    source.recycle()
+                }
+                rotated
+            } catch (_: OutOfMemoryError) {
+                Log.w(
+                    SmartTublexApplication.TAG,
+                    "ImmichImageViewer: EXIF rotate OOM — showing unrotated"
+                )
+                source
+            }
+        }
+
+        private fun readExifOrientation(bytes: ByteArray, cacheDir: File): Int {
+            return try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    ExifInterface(ByteArrayInputStream(bytes)).getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL
+                    )
+                } else {
+                    // EXIF lives in the first APP1 segment; avoid writing multi‑MB originals.
+                    val prefixLen = minOf(bytes.size, 256 * 1024)
+                    val tmp = File.createTempFile("immich_exif_", ".bin", cacheDir)
+                    try {
+                        tmp.outputStream().use { it.write(bytes, 0, prefixLen) }
+                        ExifInterface(tmp.absolutePath).getAttributeInt(
+                            ExifInterface.TAG_ORIENTATION,
+                            ExifInterface.ORIENTATION_NORMAL
+                        )
+                    } finally {
+                        tmp.delete()
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.w(
+                    SmartTublexApplication.TAG,
+                    "ImmichImageViewer: EXIF read failed — assuming upright",
+                    t
+                )
+                ExifInterface.ORIENTATION_NORMAL
+            }
         }
     }
 }
