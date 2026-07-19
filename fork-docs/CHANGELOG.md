@@ -62,6 +62,14 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Immich Phase 3d: `ImmichBrowsePresenter` rows / continue / album grid; `PlexChannelUploadsPresenter` opens Immich album grids
 - Immich Phase 3e: `ImmichSettingsPresenter` (sign-in / change credentials / sign-out); `ImmichSettingsInstaller` + shared `SettingsGridInstaller` inject Plex + Immich into upstream settings grid after Accounts
 - Immich Phase 3f: `ImmichPlaybackBridge` seeds YouTube format cache; `ImmichAuthHeaderInstaller` OkHttp interceptor (`x-api-key`) + force OkHttp data source; `PlexAwareVideoLoaderController` also prepares Immich
+- Immich Image Viewer: `ImmichImageViewerActivity` shows stills fullscreen (OkHttp + sampled decode); `PlexAwareVideoLoaderController` routes `!isVideo` there and finishes `PlaybackActivity`; `packageWrapperApk` injects the activity into the upstream manifest; Exo seed refused for images
+- Fix Immich Image Viewer launch: start from resumed `PlaybackActivity` (not Application+finish race); log `ActivityNotFoundException`; finish Playback only after viewer `onCreate`
+- Fix Immich Image Viewer wrong asset: `singleTop` + `CLEAR_TOP` + `onNewIntent` so a leftover viewer under Playback does not keep the previous photo
+- Fix Immich Image Viewer buried under Playback: always `NEW_TASK` from app context + suppress/finish `PlaybackActivity` until viewer resumes
+- Browse soft-fails: `InterruptedIOException` from cancelled section loads logged at Debug (`BrowseLoadErrors`), not Error
+- Fix Immich photo click: stills use `hasUploads` + null `videoId` → `ChannelUploadsPresenter.openChannel` → image viewer (never `PlaybackPresenter`); avoids black first video after a photo
+- Fix Immich still listing: `getParams()` returns unique `immich_still:{assetId}` so `Video.isEmpty()` does not drop cards and `VideoGroup` does not collapse all stills as duplicates
+- Fix Browse flicker on resume: `ContentBrowseInstaller` only calls `updateSections` when sidebar pin order actually changed
 - Fix Immich sidebar Sign-in: pass BrowseActivity context into `SimpleEditDialog` (was `applicationContext` → `token null`)
 - Fix Immich validate: `validateObserve()` uses `RxHelper.fromCallable` (was main-thread network → `NetworkOnMainThreadException`)
 - Fix Immich media auth: thumbnail/playback URLs include `?apiKey=` (Glide/Exo need no header); stop clearing Exo factory on every prepare
@@ -76,6 +84,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Phase 3d: `PlexAwareVideoLoaderController` + `PlexPlaybackInstaller` seed Plex format info into upstream YouTube cache before play
 - Phase 3.4: `PlexBrowsePresenter.getLibraryGridObserve` / `getChildrenGroupObserve`; `PlexChannelUploadsPresenter` overrides `obtainUploadsObservable` + scroll continue; installed as `ChannelUploadsPresenter.sInstance`
 - Phase 3.5: `PlexSettingsPresenter` (sign-in / server pick / sign-out); settings inject via shared `SettingsGridInstaller` (also Immich)
+- Fix Plex watch history: `PlexProgressController` + `PlexPlaybackBridge.updateProgress` report `/:/timeline` (tickle/pause/end/seek/release) so Continue Watching survives restart
 
 ### PlexServiceCore
 
@@ -101,8 +110,10 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 | — | `PlexSettingsPresenter` / `ImmichSettingsPresenter` | Settings dialogs (sign-in / sign-out) |
 | — | `SettingsGridInstaller` (`PlexSettingsInstaller` / `ImmichSettingsInstaller`) | Shared inject into `mSettingsGridMapping` |
 | — | `MediaSourceRegistry` | Source switch / Plex + Immich manager access |
-| — | `PlexPlaybackBridge` / `ImmichPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed |
+| — | `PlexPlaybackBridge` / `ImmichPlaybackBridge` | FormatInfo resolve + YouTube format-cache seed + PMS progress |
+| — | `ImmichImageViewerActivity` | Fullscreen Immich stills (injected via `packageWrapperApk`) |
 | — | `PlexNextEpisodeResolver` | Seeds `Video.nextMediaItem` for series autoplay |
 | — | `ImmichAuthHeaderInstaller` | OkHttp `x-api-key` interceptor + force OkHttp while Immich signed in |
-| `VideoLoaderController` | `PlexAwareVideoLoaderController` | Installed via `PlexPlaybackInstaller` (Plex + Immich + next episode) |
+| `VideoLoaderController` | `PlexAwareVideoLoaderController` | Installed via `PlexPlaybackInstaller` (Plex + Immich + next episode + image viewer) |
+| `PlaybackPresenter` listeners | `PlexProgressController` | Installed via `PlexPlaybackInstaller`; PMS timeline / history |
 | — | `PlexSignInPlaceholder` | Sidebar error / sign-in / connected states |

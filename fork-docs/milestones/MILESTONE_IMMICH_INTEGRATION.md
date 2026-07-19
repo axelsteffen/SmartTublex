@@ -39,7 +39,7 @@ SmartTublex/
 |-------|--------|
 | Auth | Server base URL + API key (`x-api-key`) — no PIN/OAuth for TV MVP |
 | Server | Single instance URL in SignIn/Prefs (no multi-server discovery) |
-| Browse MVP | Albums + video assets (paginated); People/Search/photo viewer later |
+| Browse MVP | Albums + photos (year rows) + videos; People/Search later; photo viewer via Content Browse step D |
 | Playback | Direct video playback / original URL; no progress timeline in MVP |
 
 ## Implementation Phases

@@ -13,6 +13,7 @@ Replace the single Plex / Immich sidebar entries with five content-type menus (F
 | Plex playback via format-cache seed | done |
 | Next-episode autoplay | done |
 | Content-type sidebar split | done |
+| Immich still-image viewer | done |
 
 ## Architecture Principles
 
@@ -33,6 +34,7 @@ Replace the single Plex / Immich sidebar entries with five content-type menus (F
 | B2c | Fotos (year categories) + Alben (album cards) | done |
 | B3 | Sidebar icons + packaging | done |
 | C | CHANGELOG + graphify update | done |
+| D | Immich Image Viewer (still images; not ExoPlayer) | done |
 
 ## Dependencies
 
@@ -44,12 +46,14 @@ Replace the single Plex / Immich sidebar entries with five content-type menus (F
 
 - `app/.../SidebarSectionRegistry.kt`, `ContentBrowseInstaller`, presenters
 - `app/.../PlexAwareVideoLoaderController.kt`, `PlexNextEpisodeResolver`
+- `app/.../ImmichImageViewerActivity.kt` — fullscreen still-image viewer
 - `PlexServiceCore` — `PlexMediaItem` / metadata mapping
 - `ImmichServiceCore` — year / photo search APIs
-- `app/build.gradle.kts` — icon copy in `packageWrapperApk`
+- `app/build.gradle.kts` — icon copy + `ImmichImageViewerActivity` manifest inject in `packageWrapperApk`
 - `fork-docs/CHANGELOG.md`, this milestone
 
 ## TV Notes
 
 - Watchlist year-sort applies to the loaded merge window (cap), not a full remote sort
 - Photo years emit empty years skipped; assets paginated per year
+- Photo click opens `ImmichImageViewerActivity` (sampled original); DPAD next/prev deferred
