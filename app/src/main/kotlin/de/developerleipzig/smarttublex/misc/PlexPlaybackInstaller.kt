@@ -9,7 +9,8 @@ import de.developerleipzig.smarttublex.SmartTublexApplication
 
 /**
  * Phase 3d / 3f: swap upstream [VideoLoaderController] for [PlexAwareVideoLoaderController]
- * (Plex + Immich seed) inside [PlaybackPresenter]'s listener list (no upstream bytecode patch).
+ * (Plex + Immich seed) and install [PlexProgressController] inside [PlaybackPresenter]'s
+ * listener list (no upstream bytecode patch).
  */
 object PlexPlaybackInstaller {
     @Volatile
@@ -28,8 +29,14 @@ object PlexPlaybackInstaller {
             if (!replaceVideoLoader(presenter)) {
                 return
             }
+            if (!ensureProgressController(presenter)) {
+                return
+            }
             installed = true
-            Log.i(SmartTublexApplication.TAG, "PlexPlaybackInstaller: PlexAwareVideoLoaderController installed")
+            Log.i(
+                SmartTublexApplication.TAG,
+                "PlexPlaybackInstaller: PlexAwareVideoLoaderController + PlexProgressController installed"
+            )
         }
     }
 
@@ -60,6 +67,27 @@ object PlexPlaybackInstaller {
             true
         } catch (t: Throwable) {
             Log.e(SmartTublexApplication.TAG, "PlexPlaybackInstaller: failed to replace VideoLoaderController", t)
+            false
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun ensureProgressController(presenter: PlaybackPresenter): Boolean {
+        return try {
+            val field = PlaybackPresenter::class.java.getDeclaredField("mEventListeners")
+            field.isAccessible = true
+            val listeners = field.get(presenter) as MutableList<PlayerEventListener>
+
+            if (listeners.any { it is PlexProgressController }) {
+                return true
+            }
+
+            val controller = PlexProgressController()
+            controller.setMainController(presenter)
+            listeners.add(controller)
+            true
+        } catch (t: Throwable) {
+            Log.e(SmartTublexApplication.TAG, "PlexPlaybackInstaller: failed to add PlexProgressController", t)
             false
         }
     }

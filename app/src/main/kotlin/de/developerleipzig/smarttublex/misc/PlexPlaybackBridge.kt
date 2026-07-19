@@ -4,17 +4,20 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo
+import com.liskovsoft.sharedutils.helpers.MessageHelpers
+import com.liskovsoft.sharedutils.prefs.GlobalPreferences
+import com.liskovsoft.sharedutils.rx.RxHelper
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
+import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService
 import de.developerleipzig.plexapi.adapter.PlexMediaItemAdapter
 import de.developerleipzig.plexapi.adapter.PlexMediaItemFormatInfo
 import de.developerleipzig.plexapi.library.PlexMediaItemImpl
+import de.developerleipzig.plexserviceinterfaces.PlexMediaService
 import de.developerleipzig.plexserviceinterfaces.data.PlexMediaItem
-import com.liskovsoft.sharedutils.helpers.MessageHelpers
-import com.liskovsoft.sharedutils.prefs.GlobalPreferences
-import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
-import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import de.developerleipzig.smarttublex.errors.PlexErrorClassifier
 import io.reactivex.Observable
+import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import java.net.SocketTimeoutException
 import java.util.concurrent.CountDownLatch
@@ -25,10 +28,13 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Phase 2.5 / 3d: resolve a Plex item to an ExoPlayer-compatible [MediaItemFormatInfo]
  * and seed the upstream YouTube format cache so [VideoLoaderController] opens Direct Play / HLS.
+ * Also reports playback progress to PMS (`/:/timeline`).
  */
 object PlexPlaybackBridge {
     private const val SEED_TIMEOUT_SEC = 60L
     private val mainHandler = Handler(Looper.getMainLooper())
+    @Volatile
+    private var progressAction: Disposable? = null
 
     fun isPlexVideo(video: Video?): Boolean {
         if (video == null) return false
@@ -178,6 +184,36 @@ object PlexPlaybackBridge {
             video.cardImageUrl,
             0
         )
+    }
+
+    /**
+     * Reports progress to PMS. Fire-and-forget.
+     * Playing updates coalesce (skip while in flight); paused/stopped always replace.
+     */
+    fun updateProgress(
+        video: Video?,
+        positionMs: Long,
+        durationMs: Long,
+        state: String?
+    ) {
+        val item = resolvePlexItem(video) ?: return
+        val timelineState = state?.takeIf { it.isNotEmpty() } ?: PlexMediaService.STATE_STOPPED
+        val force = timelineState != PlexMediaService.STATE_PLAYING
+        if (!force && RxHelper.isAnyActionRunning(progressAction)) {
+            return
+        }
+
+        RxHelper.disposeActions(progressAction)
+        progressAction = RxHelper.execute(
+            MediaSourceRegistry.getPlexServiceManager()
+                .getMediaService()
+                .updateProgressObserve(item, positionMs, durationMs, timelineState)
+        ) { error ->
+            Log.e(
+                SmartTublexApplication.TAG,
+                "PlexPlaybackBridge: progress sync failed ratingKey=${item.ratingKey}: ${error.message}"
+            )
+        }
     }
 
     /**
