@@ -82,6 +82,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Local compat: omit `getCategory()` on `PlexMediaItemFormatInfo` for upstream JAR
 - Discover watchlist: `MediaContainer.librarySectionID` as `String` (fixes Gson `NumberFormatException` on `"watchlist"`)
 - `PlexMediaItem`: `parentRatingKey` / `grandparentRatingKey` / `index` for next-episode resolve
+- `PlexMediaItem`: `grandparentTitle` / `parentTitle` / `parentIndex`; episode/season cards show show name + `SxxExx` subtitle
 - `PlexMediaGroupAdapter.fromBrowseCard` + `fromLibraryBrowse(..., displayTitle)` for „Alle Filme/TV-Shows“
 
 ### Wrapper Touch Points
