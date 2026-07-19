@@ -281,6 +281,23 @@ val packageWrapperApk by tasks.registering {
             src.copyTo(drawableNodpi.resolve(name), overwrite = true)
         }
 
+        // Content sidebar icons (Filme / TV-Shows / Merkliste / Fotos / Alben)
+        val iconsDir = rootProject.projectDir.resolve("images/icons/generated")
+        check(iconsDir.isDirectory) {
+            "Missing icons dir: $iconsDir — run images/icons/generate_icons.py"
+        }
+        for (name in listOf(
+            "icon_movies.png",
+            "icon_tv_shows.png",
+            "icon_watchlist.png",
+            "icon_photos.png",
+            "icon_albums.png",
+        )) {
+            val src = iconsDir.resolve(name)
+            check(src.isFile) { "Missing sidebar icon: $src" }
+            src.copyTo(drawableNodpi.resolve(name), overwrite = true)
+        }
+
         val stringsFile = decoded.resolve("res/values/strings.xml")
         check(stringsFile.isFile) { "Missing decoded strings.xml: $stringsFile" }
         var stringsXml = stringsFile.readText()
