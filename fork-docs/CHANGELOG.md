@@ -63,6 +63,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Immich Phase 3e: `ImmichSettingsPresenter` (sign-in / change credentials / sign-out); `ImmichSettingsInstaller` + shared `SettingsGridInstaller` inject Plex + Immich into upstream settings grid after Accounts
 - Immich Phase 3f: `ImmichPlaybackBridge` seeds YouTube format cache; `ImmichAuthHeaderInstaller` OkHttp interceptor (`x-api-key`) + force OkHttp data source; `PlexAwareVideoLoaderController` also prepares Immich
 - Immich Image Viewer: `ImmichImageViewerActivity` shows stills fullscreen (OkHttp + sampled decode); `PlexAwareVideoLoaderController` routes `!isVideo` there and finishes `PlaybackActivity`; `packageWrapperApk` injects the activity into the upstream manifest; Exo seed refused for images
+- Fix Immich Image Viewer EXIF orientation: apply `ExifInterface` rotation/flip after sampled decode of `/original` (thumbnails already oriented by Immich)
 - Fix Immich Image Viewer launch: start from resumed `PlaybackActivity` (not Application+finish race); log `ActivityNotFoundException`; finish Playback only after viewer `onCreate`
 - Fix Immich Image Viewer wrong asset: `singleTop` + `CLEAR_TOP` + `onNewIntent` so a leftover viewer under Playback does not keep the previous photo
 - Fix Immich Image Viewer buried under Playback: always `NEW_TASK` from app context + suppress/finish `PlaybackActivity` until viewer resumes
