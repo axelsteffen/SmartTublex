@@ -16,6 +16,7 @@ import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.sharedutils.rx.RxHelper
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
 import de.developerleipzig.smarttublex.SmartTublexApplication
+import de.developerleipzig.smarttublex.misc.BrowseLoadErrors
 import de.developerleipzig.smarttublex.misc.PlexPlaybackBridge
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
@@ -270,7 +271,7 @@ object PlexBrowsePresenter {
             val libForKey = if (libraries.size == 1) paginationLibrary else null
             BuiltGroup(PlexMediaGroupAdapter.fromSimple(title, kind, libForKey, merged, pageForKey))
         } catch (e: Throwable) {
-            Log.e(SmartTublexApplication.TAG, "PlexBrowsePresenter: shelf $kind failed", e)
+            BrowseLoadErrors.logSoftFail("PlexBrowsePresenter: shelf $kind failed", e)
             BuiltGroup(null, e)
         }
     }
@@ -284,7 +285,7 @@ object PlexBrowsePresenter {
         return try {
             BuiltGroup(PlexMediaGroupAdapter.fromBrowseCard(library, rowTitle, cardTitle))
         } catch (e: Throwable) {
-            Log.e(SmartTublexApplication.TAG, "PlexBrowsePresenter: browse card failed", e)
+            BrowseLoadErrors.logSoftFail("PlexBrowsePresenter: browse card failed", e)
             BuiltGroup(null, e)
         }
     }
@@ -323,7 +324,7 @@ object PlexBrowsePresenter {
                 )
             )
         } catch (e: Throwable) {
-            Log.e(SmartTublexApplication.TAG, "PlexBrowsePresenter: watchlist failed", e)
+            BrowseLoadErrors.logSoftFail("PlexBrowsePresenter: watchlist failed", e)
             BuiltGroup(null, e)
         }
     }

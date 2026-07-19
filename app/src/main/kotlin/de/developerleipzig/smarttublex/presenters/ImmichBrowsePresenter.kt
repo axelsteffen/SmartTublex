@@ -11,6 +11,7 @@ import de.developerleipzig.immichserviceinterfaces.data.ImmichAssetPage
 import com.liskovsoft.sharedutils.rx.RxHelper
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video
 import de.developerleipzig.smarttublex.SmartTublexApplication
+import de.developerleipzig.smarttublex.misc.BrowseLoadErrors
 import de.developerleipzig.smarttublex.misc.MediaSourceRegistry
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
@@ -36,7 +37,7 @@ object ImmichBrowsePresenter {
                 val years = try {
                     libraryService.photoYearsObserve.blockingFirst()
                 } catch (e: Throwable) {
-                    Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: years failed", e)
+                    BrowseLoadErrors.logSoftFail("ImmichBrowsePresenter: years failed", e)
                     softFail = e
                     emptyList()
                 }
@@ -127,7 +128,7 @@ object ImmichBrowsePresenter {
             if (page == null || page.items.isEmpty()) return BuiltGroup(null)
             BuiltGroup(ImmichMediaGroupAdapter.fromYear(year, page.items, page))
         } catch (e: Throwable) {
-            Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: year $year failed", e)
+            BrowseLoadErrors.logSoftFail("ImmichBrowsePresenter: year $year failed", e)
             BuiltGroup(null, e)
         }
     }
@@ -138,7 +139,7 @@ object ImmichBrowsePresenter {
             if (albums.isNullOrEmpty()) return BuiltGroup(null)
             BuiltGroup(ImmichMediaGroupAdapter.fromAlbumsList(albums))
         } catch (e: Throwable) {
-            Log.e(SmartTublexApplication.TAG, "ImmichBrowsePresenter: albums failed", e)
+            BrowseLoadErrors.logSoftFail("ImmichBrowsePresenter: albums failed", e)
             BuiltGroup(null, e)
         }
     }
