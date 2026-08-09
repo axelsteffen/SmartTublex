@@ -15,6 +15,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Immich milestone: Phase 1.6 (MockWebServer IT) + Phase 3a (`MediaSourceRegistry.IMMICH`) marked done in [MILESTONE_IMMICH_INTEGRATION.md](milestones/MILESTONE_IMMICH_INTEGRATION.md)
 - [MILESTONE_CONTENT_BROWSE.md](milestones/MILESTONE_CONTENT_BROWSE.md): content menus + series autoplay
 - `BRANDING.md`: sidebar icons under `images/icons/generated/`
+- [MILESTONE_PLEX_SEARCH.md](milestones/MILESTONE_PLEX_SEARCH.md): dedicated Plex search screen for Filme/TV-Shows
 
 ### build
 
@@ -86,6 +87,8 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Phase 3.4: `PlexBrowsePresenter.getLibraryGridObserve` / `getChildrenGroupObserve`; `PlexChannelUploadsPresenter` overrides `obtainUploadsObservable` + scroll continue; installed as `ChannelUploadsPresenter.sInstance`
 - Phase 3.5: `PlexSettingsPresenter` (sign-in / server pick / sign-out); settings inject via shared `SettingsGridInstaller` (also Immich)
 - Fix Plex watch history: `PlexProgressController` + `PlexPlaybackBridge.updateProgress` report `/:/timeline` (tickle/pause/end/seek/release) so Continue Watching survives restart
+- Plex search: dedicated `PlexSearchActivity` (Filme + TV-Shows result rows), opened via a "Suchen" card placed right next to the existing "Alle Filme"/"Alle TV-Shows" card in the same row; NOT a `SearchPresenter` override — that upstream presenter has a private constructor and cannot be subclassed. `PlexBrowsePresenter.getMovieSearchRowObserve` / `getShowSearchRowObserve` merge/dedupe across libraries (same `MERGE_PAGE_CAP` pattern as Continue Watching); continuation reuses `continueGroupObserve`; single-library setups only get real paging (documented limitation)
+- `PlexChannelUploadsPresenter.openChannel`: new branch (checked before the generic library-browse-stub branch) recognizes the "Suchen" marker and opens `PlexSearchActivity` instead of a library grid
 
 ### PlexServiceCore
 
@@ -96,6 +99,10 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `PlexMediaItem`: `grandparentTitle` / `parentTitle` / `parentIndex`; episode/season cards show show name + `SxxExx` subtitle
 - `PlexLibraryService.getItemObserve(ratingKey)` for metadata refresh (next-episode parent keys)
 - `PlexMediaGroupAdapter.fromBrowseCard` + `fromLibraryBrowse(..., displayTitle)` for „Alle Filme/TV-Shows“
+- Plex search: `PlexPmsApi.getSectionItems` gains a `title` query param (nullable, omitted for browse calls); `PlexLibraryService.getSearchPageObserve(library, type, query, offset)` reuses the existing container-paging plumbing (`fetchSectionPage`, `mapMetadata`, `resolveTotalSize`)
+- `PlexMediaGroupAdapter.Kind.SEARCH` + `fromSearch(...)`; `continueFrom` now also propagates `searchType`/`searchQuery` so continuation keeps the same query
+- `PlexMediaItemAdapter.fromSearchEntry` — "Suchen" stub card with a marker `reloadPageKey` (`SEARCH_ENTRY_MOVIE`/`SEARCH_ENTRY_SHOW`) that never collides with a real PMS section key
+- `PlexMediaGroupAdapter.fromBrowseCard` gains a 4-arg overload that puts the "Alle Filme"/"Alle TV-Shows" browse stub and the "Suchen" stub in the same row, side by side; the original 3-arg overload is unchanged (browse stub only)
 
 ### Wrapper Touch Points
 
@@ -118,3 +125,4 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 | `VideoLoaderController` | `PlexAwareVideoLoaderController` | Installed via `PlexPlaybackInstaller` (Plex + Immich + next episode + image viewer) |
 | `PlaybackPresenter` listeners | `PlexProgressController` | Installed via `PlexPlaybackInstaller`; PMS timeline / history |
 | — | `PlexSignInPlaceholder` | Sidebar error / sign-in / connected states |
+| — | `PlexSearchActivity` | Dedicated Plex search screen (Filme + TV-Shows), injected via `packageWrapperApk`; click routed by `PlexChannelUploadsPresenter.openChannel` |
