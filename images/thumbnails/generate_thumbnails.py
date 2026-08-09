@@ -16,6 +16,8 @@ SIZE = (640, 360)
 MAPPING = {
     "all_movies.png": "all_movies.png",
     "all_TV-Shows.png": "all_tv_shows.png",
+    "all_movies_search.png": "all_movies_search.png",
+    "all_TV-Shows_search.png": "all_tv_shows_search.png",
 }
 
 

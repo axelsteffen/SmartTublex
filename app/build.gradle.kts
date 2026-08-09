@@ -350,14 +350,19 @@ val packageWrapperApk by tasks.registering {
             }
         }
 
-        // Plex "All Movies" / "All TV Shows" library browse card thumbnails
+        // Plex "All Movies" / "All TV Shows" library browse + "Suchen" search-entry card thumbnails
         val thumbnailDir = rootProject.projectDir.resolve("images/thumbnails/generated")
         check(thumbnailDir.isDirectory) {
             "Missing thumbnail dir: $thumbnailDir — run images/thumbnails/generate_thumbnails.py"
         }
         val drawableNodpi = decoded.resolve("res/drawable-nodpi")
         drawableNodpi.mkdirs()
-        for (name in listOf("all_movies.png", "all_tv_shows.png")) {
+        for (name in listOf(
+            "all_movies.png",
+            "all_tv_shows.png",
+            "all_movies_search.png",
+            "all_tv_shows_search.png",
+        )) {
             val src = thumbnailDir.resolve(name)
             check(src.isFile) { "Missing thumbnail asset: $src" }
             src.copyTo(drawableNodpi.resolve(name), overwrite = true)
