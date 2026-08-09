@@ -31,6 +31,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `packageWrapperApk` also rewrites `activity-alias` `android:targetActivity` from `SplashActivity` → `SmartTublexSplashActivity` (avoids `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED`)
 - `packageWrapperApk` overwrites upstream mipmap branding from `images/logo/generated/` and sets `app_name` / `browse_title` to `SmartTublex`
 - `packageWrapperApk` copies Plex library browse card thumbs from `images/thumbnails/generated/` into `drawable-nodpi` (`all_movies`, `all_tv_shows`)
+- `images/thumbnails/`: refreshed "Alle Filme" / "Alle TV-Shows" card masters (`all_movies.png`, `all_TV-Shows.png`); old masters moved to `images/thumbnails/archive/`; regenerated `generated/` via `generate_thumbnails.py`
 - `packageWrapperApk` copies content sidebar icons from `images/icons/generated/` (`icon_movies`, `icon_tv_shows`, `icon_watchlist`, `icon_photos`, `icon_albums`)
 - `images/icons/generate_icons.py`: 301×301 LA filled glyphs (SmartTube `drawable-nodpi` style), not outline sketches
 - `:app` adds `compileOnly` AndroidX AARs (`core` / `activity` / `fragment` / …) so IDE/Kotlin can resolve supertypes of `SplashActivity` / `MainApplication` from the fat JAR
