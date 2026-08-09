@@ -32,6 +32,8 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `packageWrapperApk` overwrites upstream mipmap branding from `images/logo/generated/` and sets `app_name` / `browse_title` to `SmartTublex`
 - `packageWrapperApk` copies Plex library browse card thumbs from `images/thumbnails/generated/` into `drawable-nodpi` (`all_movies`, `all_tv_shows`)
 - `images/thumbnails/`: refreshed "Alle Filme" / "Alle TV-Shows" card masters (`all_movies.png`, `all_TV-Shows.png`); old masters moved to `images/thumbnails/archive/`; regenerated `generated/` via `generate_thumbnails.py`
+- `images/thumbnails/`: added dedicated "Suchen" entry-card masters (`all_movies_search.png`, `all_TV-Shows_search.png`); `generate_thumbnails.py` MAPPING + `packageWrapperApk` now also produce/copy `all_movies_search.png` / `all_tv_shows_search.png`
+- [PlexMediaItemAdapter.java](../PlexServiceCore/plexapi/src/main/java/de/developerleipzig/plexapi/adapter/PlexMediaItemAdapter.java): "Suchen" entry cards (`fromSearchEntry`) now use `DRAWABLE_SEARCH_MOVIES` / `DRAWABLE_SEARCH_TV_SHOWS` instead of sharing the "Alle Filme" / "Alle TV-Shows" library-browse drawables
 - `packageWrapperApk` copies content sidebar icons from `images/icons/generated/` (`icon_movies`, `icon_tv_shows`, `icon_watchlist`, `icon_photos`, `icon_albums`)
 - `images/icons/generate_icons.py`: 301×301 LA filled glyphs (SmartTube `drawable-nodpi` style), not outline sketches
 - `:app` adds `compileOnly` AndroidX AARs (`core` / `activity` / `fragment` / …) so IDE/Kotlin can resolve supertypes of `SplashActivity` / `MainApplication` from the fat JAR
