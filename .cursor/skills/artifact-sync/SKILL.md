@@ -41,7 +41,13 @@ Do **not** download when the user only asked for status.
 
 ### 2. Sync (`sync` / `refresh artifact` / …)
 
+`downloadApk`'s only `@Input` is the (rolling) `latest` URL and its `@OutputFile` is
+`apk-base/build/apk2maven/source.apk`. If that file already exists from a prior run, Gradle marks
+the task UP-TO-DATE and skips the fetch — so always invalidate first, or the "sync" silently
+becomes a no-op:
+
 ```bash
+rm -rf apk-base/build/apk2maven
 ./gradlew :apk-base:installApkArtifact --no-daemon
 ```
 
@@ -53,7 +59,7 @@ Ask for confirmation only if the user phrasing is ambiguous (e.g. "update someth
 
 ### 3. After sync
 
-- Run a smoke build when `:app` exists: `./gradlew :app:assembleDebug` (or compile the consuming module)
+- Run a smoke build when `:app` exists: `./gradlew :app:assembleDebug` (or compile the consuming module). A compile failure here is the main signal of upstream API drift, since `:app` only subclasses/overrides upstream types and never patches them — cross-check the failing class against the Wrapper Touch Points table in [fork-docs/CHANGELOG.md](../../../fork-docs/CHANGELOG.md) to scope the fix.
 - Remind to update [fork-docs/CHANGELOG.md](../../../fork-docs/CHANGELOG.md) if this was a deliberate base bump
 
 ### 4. Never
