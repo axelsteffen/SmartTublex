@@ -38,6 +38,9 @@ object PlexBrowsePresenter {
     private const val CARD_ALL_MOVIES = "Alle Filme"
     private const val CARD_ALL_SHOWS = "Alle TV-Shows"
     private const val ROW_WATCHLIST = "Merkliste"
+    private const val CARD_SEARCH = "Suchen"
+    private const val TITLE_SEARCH_MOVIES = "Filme"
+    private const val TITLE_SEARCH_SHOWS = "TV-Shows"
 
     fun isPlexGroup(group: MediaGroup?): Boolean = group is PlexMediaGroupAdapter
 
@@ -92,6 +95,97 @@ object PlexBrowsePresenter {
             return null
         }
         return RxHelper.fromCallable { fetchChildrenGroup(video) }
+    }
+
+    /** Title-filtered movie search row (dedicated Plex search screen). */
+    fun getMovieSearchRowObserve(query: String): Observable<MediaGroup> =
+        searchRowObserve(query, TYPE_MOVIE, PlexPmsApi.TYPE_MOVIE, TITLE_SEARCH_MOVIES)
+
+    /** Title-filtered show search row (dedicated Plex search screen). */
+    fun getShowSearchRowObserve(query: String): Observable<MediaGroup> =
+        searchRowObserve(query, TYPE_SHOW, PlexPmsApi.TYPE_SHOW, TITLE_SEARCH_SHOWS)
+
+    fun isSearchGroup(group: MediaGroup?): Boolean =
+        group is PlexMediaGroupAdapter && group.isSearchGroup
+
+    private fun searchRowObserve(
+        query: String,
+        libraryType: String,
+        pmsType: Int,
+        rowTitle: String
+    ): Observable<MediaGroup> {
+        return RxHelper.createLong { emitter ->
+            try {
+                if (query.isBlank()) {
+                    if (!emitter.isDisposed) emitter.onComplete()
+                    return@createLong
+                }
+                val libraryService = PlexServiceManager.instance().libraryService
+                val libraries = libraryService.librariesObserve.blockingFirst().orEmpty()
+                val scoped = libraries.filter { library ->
+                    library.type.equals(libraryType, ignoreCase = true)
+                }
+                if (scoped.isEmpty()) {
+                    if (!emitter.isDisposed) emitter.onComplete()
+                    return@createLong
+                }
+                val built = buildSearchShelf(libraryService, scoped, pmsType, query, rowTitle)
+                if (built.group != null && !emitter.isDisposed) {
+                    emitter.onNext(built.group)
+                }
+                // Soft-fail: a Plex outage never blocks the search screen with an error dialog.
+                if (!emitter.isDisposed) emitter.onComplete()
+            } catch (e: Throwable) {
+                BrowseLoadErrors.logSoftFail("PlexBrowsePresenter: search row failed", e)
+                if (!emitter.isDisposed) emitter.onComplete()
+            }
+        }
+    }
+
+    private fun buildSearchShelf(
+        libraryService: PlexLibraryService,
+        libraries: List<PlexLibrary>,
+        type: Int,
+        query: String,
+        rowTitle: String
+    ): BuiltGroup {
+        return try {
+            val merged = ArrayList<PlexMediaItem>()
+            val seen = HashSet<String>()
+            var paginationLibrary: PlexLibrary? = null
+            var paginationPage: PlexPage? = null
+
+            for (library in libraries) {
+                if (merged.size >= MERGE_PAGE_CAP) break
+                val page = toPlexPage(
+                    libraryService.getSearchPageObserve(library, type, query, 0).blockingFirst()
+                )
+                if (page == null || page.items.isEmpty()) continue
+                if (paginationLibrary == null) {
+                    paginationLibrary = library
+                    paginationPage = page
+                }
+                for (item in page.items) {
+                    val key = item.ratingKey ?: continue
+                    if (!seen.add(key)) continue
+                    merged.add(item)
+                    if (merged.size >= MERGE_PAGE_CAP) break
+                }
+            }
+
+            if (merged.isEmpty()) return BuiltGroup(null)
+
+            // Real onScrollEnd paging only for single-library setups (same trade-off as
+            // buildMergedShelf's Continue-Watching/Recently-Added shelves).
+            val pageForKey = if (libraries.size == 1) paginationPage else null
+            val libForKey = if (libraries.size == 1) paginationLibrary else null
+            BuiltGroup(
+                PlexMediaGroupAdapter.fromSearch(rowTitle, libForKey, type, query, merged, pageForKey)
+            )
+        } catch (e: Throwable) {
+            BrowseLoadErrors.logSoftFail("PlexBrowsePresenter: search shelf failed", e)
+            BuiltGroup(null, e)
+        }
     }
 
     private fun libraryRowsObserve(
@@ -283,7 +377,8 @@ object PlexBrowsePresenter {
     ): BuiltGroup {
         val library = libraries.firstOrNull() ?: return BuiltGroup(null)
         return try {
-            BuiltGroup(PlexMediaGroupAdapter.fromBrowseCard(library, rowTitle, cardTitle))
+            // "Suchen" sits right next to the browse card, in the same row.
+            BuiltGroup(PlexMediaGroupAdapter.fromBrowseCard(library, rowTitle, cardTitle, CARD_SEARCH))
         } catch (e: Throwable) {
             BrowseLoadErrors.logSoftFail("PlexBrowsePresenter: browse card failed", e)
             BuiltGroup(null, e)
@@ -377,6 +472,11 @@ object PlexBrowsePresenter {
                 && group.plexLibrary != null -> fetchLibraryPage(libraryService, group.plexLibrary, offset)
             group.isContainerGroup && group.plexContainer != null -> toPlexPage(
                 libraryService.getChildrenPageObserve(group.plexContainer, offset).blockingFirst()
+            )
+            group.isSearchGroup && group.plexLibrary != null && !group.searchQuery.isNullOrEmpty() -> toPlexPage(
+                libraryService.getSearchPageObserve(
+                    group.plexLibrary, group.searchType, group.searchQuery, offset
+                ).blockingFirst()
             )
             else -> null
         }

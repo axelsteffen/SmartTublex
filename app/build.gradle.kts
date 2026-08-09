@@ -280,6 +280,47 @@ val packageWrapperApk by tasks.registering {
         check(xml.contains(imageViewerName) && xml.contains("launchMode=\"singleTop\"")) {
             "Failed to inject ImmichImageViewerActivity (singleTop) into AndroidManifest.xml"
         }
+        // WRAPPER: dedicated Plex search screen (not present in upstream SmartTube APK).
+        // No explicit android:theme — inherits the app-level Leanback browse theme, same as
+        // BrowseActivity / ChannelUploadsActivity / SearchTagsActivity.
+        val plexSearchName = "de.developerleipzig.smarttublex.PlexSearchActivity"
+        val plexSearchActivity = """
+        <activity
+            android:name="$plexSearchName"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="unspecified"
+            android:configChanges="orientation|screenLayout|screenSize|smallestScreenSize|layoutDirection|keyboardHidden" />
+"""
+        if (!xml.contains(plexSearchName)) {
+            val appClose = "</application>"
+            check(xml.contains(appClose)) { "AndroidManifest missing </application>" }
+            xml = xml.replace(appClose, plexSearchActivity + appClose)
+        } else if (!xml.contains("""android:name="$plexSearchName"""") ||
+            !xml.contains("launchMode=\"singleTop\"")
+        ) {
+            xml = xml.replace(
+                Regex(
+                    """\s*<activity\s+android:name="$plexSearchName"[^/]*/>""",
+                    RegexOption.MULTILINE
+                ),
+                plexSearchActivity
+            )
+            if (!xml.contains("launchMode=\"singleTop\"") || !xml.contains(plexSearchName)) {
+                xml = xml.replace(
+                    Regex(
+                        """\s*<activity[^>]*android:name="$plexSearchName"[^>]*(/>|>\s*</activity>)""",
+                        setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL)
+                    ),
+                    ""
+                )
+                val appClose = "</application>"
+                xml = xml.replace(appClose, plexSearchActivity + appClose)
+            }
+        }
+        check(xml.contains(plexSearchName) && xml.contains("launchMode=\"singleTop\"")) {
+            "Failed to inject PlexSearchActivity (singleTop) into AndroidManifest.xml"
+        }
         manifest.writeText(xml)
 
         // SmartTublex branding: overwrite upstream mipmaps + display name

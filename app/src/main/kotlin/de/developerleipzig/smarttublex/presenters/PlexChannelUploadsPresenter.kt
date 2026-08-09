@@ -10,7 +10,9 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView
 import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager
+import de.developerleipzig.plexapi.adapter.PlexMediaItemAdapter
 import de.developerleipzig.smarttublex.ImmichImageViewerActivity
+import de.developerleipzig.smarttublex.PlexSearchActivity
 import de.developerleipzig.smarttublex.SmartTublexApplication
 import de.developerleipzig.smarttublex.misc.ImmichPlaybackBridge
 import de.developerleipzig.smarttublex.misc.PlexPlaybackBridge
@@ -77,6 +79,23 @@ class PlexChannelUploadsPresenter private constructor(context: Context) :
                     "PlexChannelUploadsPresenter: Immich still → image viewer assetId=${still.id}"
                 )
                 ImmichImageViewerActivity.open(ctx, still)
+                return
+            }
+        }
+        // WRAPPER: "Suchen" entry card — open the dedicated Plex search screen instead of a
+        // library-browse grid. Must be checked before the generic library-browse-stub branch
+        // below, since both stub kinds share the same TYPE_LIBRARY / hasReloadPageKey() shape.
+        if (item != null) {
+            val reloadKey = item.reloadPageKey
+            if (reloadKey == PlexMediaItemAdapter.SEARCH_ENTRY_MOVIE ||
+                reloadKey == PlexMediaItemAdapter.SEARCH_ENTRY_SHOW
+            ) {
+                val ctx = context ?: return
+                Log.i(
+                    SmartTublexApplication.TAG,
+                    "PlexChannelUploadsPresenter: Suchen entry → PlexSearchActivity ($reloadKey)"
+                )
+                PlexSearchActivity.open(ctx, reloadKey)
                 return
             }
         }
