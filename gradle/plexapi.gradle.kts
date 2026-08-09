@@ -18,6 +18,11 @@ android {
 
     sourceSets.getByName("main").java.srcDirs("src/main/java")
 
+    testOptions {
+        // Avoid Robolectric: SmartTube's shaded ASM breaks ClassInstrumentor (see immichapi.gradle.kts).
+        unitTests.isReturnDefaultValues = true
+    }
+
     // Drop legacy stbeta/ststable/stfdroid flavors from submodule build.gradle
     packaging {
         resources.excludes += setOf("META-INF/**")
@@ -38,8 +43,9 @@ dependencies {
     implementation("androidx.annotation:annotation:1.1.0")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.6.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:3.12.13")
+    // Fakes a Context for PlexPrefs in plain JVM tests (see testutil/FakeAndroidContext).
+    testImplementation("org.mockito:mockito-core:2.25.0")
     // MediaItem/FormatInfo interfaces used by adapter tests live in the SmartTube artifact.
     testImplementation("com.liskovsoft.smarttubetv:smarttube:latest")
 }
