@@ -36,4 +36,10 @@ dependencies {
     implementation("io.reactivex.rxjava2:rxandroid:2.1.1")
     implementation("io.reactivex.rxjava2:rxjava:2.2.21")
     implementation("androidx.annotation:annotation:1.1.0")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.6.1")
+    testImplementation("com.squareup.okhttp3:mockwebserver:3.12.13")
+    // MediaItem/FormatInfo interfaces used by adapter tests live in the SmartTube artifact.
+    testImplementation("com.liskovsoft.smarttubetv:smarttube:latest")
 }
