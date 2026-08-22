@@ -19,6 +19,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 
 ### build
 
+- Refreshed SmartTube base artifact (`com.liskovsoft.smarttubetv:smarttube:latest`, 2026-08-22): APK 34,915,088 bytes / JAR 29,224,667 bytes
 - Multi-project: `:apk-base` (apk2maven), `:app` (wrapper), `:plexserviceinterfaces`, `:plexapi`, `:immichserviceinterfaces`, `:immichapi`
 - `packageWrapperApk`: resolve `apktool` via absolute path (`/opt/homebrew/bin`, `APKTOOL`, …) so Gradle daemon PATH misses do not fail assemble
 - `packageWrapperApk`: also merge `compileDebugJavaWithJavac` output (e.g. `SidebarServiceBridge`) into wrapper DEX — Kotlin-only pack caused runtime `NoClassDefFoundError`
@@ -41,6 +42,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 
 ### ImmichServiceCore
 
+- `ImmichMediaFormat`: implement upstream `MediaFormat.getAudioTrackId()` (returns `null` for Direct Play URLs)
 - Phase 1.6: MockWebServer service tests (`ImmichSignInServiceImplTest`, `ImmichLibraryServiceImplTest`, `ImmichMediaServiceImplTest`)
 - `ImmichPrefs.createInMemory()` for JVM unit tests (no Robolectric; avoids SmartTube ASM clash)
 - README: `./gradlew :immichapi:testDebugUnitTest`
@@ -95,6 +97,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 
 ### PlexServiceCore
 
+- `PlexMediaFormat`: implement upstream `MediaFormat.getAudioTrackId()` (returns `null` for Direct Play URLs)
 - Submodule `https://github.com/axelsteffen/PlexServiceCore.git`
 - Local compat: omit `getCategory()` on `PlexMediaItemFormatInfo` for upstream JAR
 - Discover watchlist: `MediaContainer.librarySectionID` as `String` (fixes Gson `NumberFormatException` on `"watchlist"`)
