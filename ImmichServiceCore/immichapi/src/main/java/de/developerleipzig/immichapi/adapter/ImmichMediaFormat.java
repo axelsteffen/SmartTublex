@@ -155,6 +155,11 @@ public final class ImmichMediaFormat implements MediaFormat {
     }
 
     @Override
+    public String getAudioTrackId() {
+        return null;
+    }
+
+    @Override
     public String getSourceUrl() {
         return null;
     }
