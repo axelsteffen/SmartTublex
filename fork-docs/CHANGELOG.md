@@ -6,6 +6,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 
 ### fork-docs
 
+- `.cursor/rules/changelog-fork.mdc`: changelog must be updated in the same turn as wrapper-specific changes (not deferred to commit / `log change`)
 - Added plan, artifact-sync docs, command registry, TV deploy notes, Plex milestone
 - Cursor rules/skills adapted for wrapper + apk2maven sync semantics
 - `TV_DEPLOY.md`: document wrong-APK ClassNotFoundException symptom (`Process: com.smarttublex`)

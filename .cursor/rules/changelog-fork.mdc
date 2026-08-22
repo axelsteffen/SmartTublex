@@ -1,24 +1,35 @@
 ---
-description: Update fork-docs/CHANGELOG.md when making wrapper-specific changes; document milestone progress
+description: Keep fork-docs/CHANGELOG.md current in the same turn as every wrapper-specific change
 alwaysApply: true
 ---
 
-# Changelog maintenance
+# Keep CHANGELOG.md current
 
-When you add, change, or remove wrapper-specific code (anything that differs from the plain upstream SmartTube APK artifact), update:
+`fork-docs/CHANGELOG.md` is the live record of wrapper work. A coding task is **not done** until `[Unreleased]` matches the change.
 
-1. **[fork-docs/CHANGELOG.md](../../fork-docs/CHANGELOG.md)** – add under `[Unreleased]` in the relevant section (`app`, `PlexServiceCore`, `build`, `fork-docs`)
+## When to write
 
-Include: file path, brief description of the change, and any new APIs or settings.
+Update the changelog in the **same turn** as you add, change, or remove wrapper-specific code (anything that differs from the plain upstream SmartTube APK artifact), including docs, Gradle, branding, and Cursor rules/skills.
+
+Do **not** wait for commit, `log change`, or a later message. Do **not** ship code-only diffs.
 
 Do **not** maintain a MediaServiceCore `CHANGELOG_FORK.md` — MSC is consumed only via the SmartTube artifact.
 
----
+## How to write
 
-# Milestone progress in the changelog
+1. Add a bullet under `[Unreleased]` in the matching section: `app`, `PlexServiceCore`, `ImmichServiceCore`, `build`, `fork-docs`.
+2. Include file path (or short identifier), what changed, and any new APIs or settings.
+3. One bullet per notable change; English, same style as existing entries.
+
+```markdown
+### app
+
+- `SmartTublexApplication`: register Immich playback bridge on startup
+```
+
+## Milestone orientation
 
 When implementing a milestone:
 
-1. **Every completed change** is recorded in `fork-docs/CHANGELOG.md` under `[Unreleased]` in a timely manner.
-2. **Orientation:** The changelog reflects the current state of the milestone – you can always see which steps are done.
-3. **Before the next step:** Check the changelog and the milestone doc in `fork-docs/milestones/` to know the current state and continue seamlessly.
+1. Record **every completed change** under `[Unreleased]` as it lands.
+2. Use the changelog plus `fork-docs/milestones/` to see what is done before the next step.

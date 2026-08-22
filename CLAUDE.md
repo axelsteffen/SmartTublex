@@ -19,7 +19,7 @@ they are binding for the whole session, not opt-in per question.
 | [fork-upstream-minimal.mdc](.cursor/rules/fork-upstream-minimal.mdc) | Keep SmartTublex isolated from the upstream SmartTube APK artifact — extend via SmartTublex-only classes or inheritance/override, never patch decompiled upstream. |
 | [milestone-implementation-workflow.mdc](.cursor/rules/milestone-implementation-workflow.mdc) | Discuss architecture/approach before implementing a milestone step; the planned steps themselves are not up for debate, only *how* to build them. |
 | [milestone-progress.mdc](.cursor/rules/milestone-progress.mdc) | One tracking doc per milestone in `fork-docs/milestones/`; TV resource constraints (low RAM/storage); technical docs always in English. |
-| [changelog-fork.mdc](.cursor/rules/changelog-fork.mdc) | Record every wrapper-specific change in `fork-docs/CHANGELOG.md` under `[Unreleased]`, and use the changelog to orient on milestone progress. |
+| [changelog-fork.mdc](.cursor/rules/changelog-fork.mdc) | Keep `fork-docs/CHANGELOG.md` current in the **same turn** as every wrapper-specific change; use it to orient on milestone progress. |
 
 ## Skills (`.cursor/skills/*/SKILL.md`)
 
