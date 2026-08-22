@@ -17,6 +17,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - [MILESTONE_CONTENT_BROWSE.md](milestones/MILESTONE_CONTENT_BROWSE.md): content menus + series autoplay
 - `BRANDING.md`: sidebar icons under `images/icons/generated/`
 - [MILESTONE_PLEX_SEARCH.md](milestones/MILESTONE_PLEX_SEARCH.md): dedicated Plex search screen for Filme/TV-Shows
+- [MILESTONE_CARD_BADGES.md](milestones/MILESTONE_CARD_BADGES.md): duration / count badges on Plex + Immich cards
 
 ### build
 
@@ -51,6 +52,7 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - Direct Play gate: refuse only on positive HEVC/AV1/VP9 sniff; UNKNOWN / probe failure fails open (fixes late-`moov` H.264 blocked by preflight)
 - `getPhotoYearsObserve` / `getAssetsForYearPageObserve` (timeline YEAR buckets + `takenAfter`/`takenBefore` search)
 - `ImmichMediaGroupAdapter`: `YEAR_ROW` / `ALBUMS_LIST` kinds for Fotos / Alben menus
+- Card badges: `ImmichMediaItemAdapter.getBadgeText()` returns the YouTube-style length for videos (`1:30:00` / `12:34`), an asset count for albums (`24 Medien`), and `null` for still images
 
 ### app
 
@@ -110,6 +112,8 @@ All notable wrapper-specific changes (relative to the plain upstream SmartTube A
 - `PlexMediaGroupAdapter.Kind.SEARCH` + `fromSearch(...)`; `continueFrom` now also propagates `searchType`/`searchQuery` so continuation keeps the same query
 - `PlexMediaItemAdapter.fromSearchEntry` — "Suchen" stub card with a marker `reloadPageKey` (`SEARCH_ENTRY_MOVIE`/`SEARCH_ENTRY_SHOW`) that never collides with a real PMS section key
 - `PlexMediaGroupAdapter.fromBrowseCard` gains a 4-arg overload that puts the "Alle Filme"/"Alle TV-Shows" browse stub and the "Suchen" stub in the same row, side by side; the original 3-arg overload is unchanged (browse stub only)
+- Card badges: `PlexMediaItemAdapter.getBadgeText()` returns the YouTube-style length for movies/episodes (`1:52:30` / `12:34`), a child count for containers (show → `3 Staffeln`, season → `7 Folgen`), and `null` for the "Alle …"/"Suchen" stub cards — upstream `Video.from(MediaItem)` forwards it to `ComplexImageCardView.setBadgeText`
+- `PlexMetadata.childCount` / `leafCount` parsed and exposed via `PlexMediaItem.getChildCount()` / `getLeafCount()`; `PlexMediaItemImpl` gains a widest constructor with the two counts (existing 15-arg constructor delegates with `0, 0`), mapped in `fromMetadata`; documented in `openapi-plex-pms-in-use.yaml`
 
 ### Wrapper Touch Points
 
