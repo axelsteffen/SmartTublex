@@ -11,6 +11,8 @@ import de.developerleipzig.immichserviceinterfaces.data.ImmichAsset;
 import de.developerleipzig.immichserviceinterfaces.data.ImmichBackedMediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 
+import java.util.Locale;
+
 /**
  * Fork-only adapter: wraps {@link ImmichAsset} (or album stub) as MSC {@link MediaItem}.
  * <p>
@@ -201,9 +203,39 @@ public final class ImmichMediaItemAdapter implements MediaItem, ImmichBackedMedi
         return mAsset.getDurationMs();
     }
 
+    /**
+     * Card overlay (upstream {@code Video.badge} → {@code ComplexImageCardView.setBadgeText}).
+     * Videos show their length like YouTube, albums their asset count, stills nothing.
+     */
     @Override
     public String getBadgeText() {
-        return null;
+        if (isAlbumBrowse()) {
+            int count = mAlbum.getAssetCount();
+            if (count <= 0) {
+                return null;
+            }
+            return count + (count == 1 ? " Medium" : " Medien");
+        }
+        if (isStillImage() || mAsset == null) {
+            return null;
+        }
+        return formatDuration(mAsset.getDurationMs());
+    }
+
+    /** YouTube-style length: {@code 12:34} below an hour, {@code 1:52:30} above. */
+    @Nullable
+    private static String formatDuration(long durationMs) {
+        if (durationMs <= 0L) {
+            return null;
+        }
+        long totalSeconds = durationMs / 1000L;
+        long hours = totalSeconds / 3600L;
+        long minutes = (totalSeconds % 3600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        if (hours > 0L) {
+            return String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds);
+        }
+        return String.format(Locale.US, "%d:%02d", minutes, seconds);
     }
 
     @Override
